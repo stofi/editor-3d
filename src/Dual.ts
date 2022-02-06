@@ -128,6 +128,7 @@ export default class Dual {
     }
     calculateDual() {
         this.secondary.forEach((cell) => {
+            cell.value = 0
             this.secondaryToMain(cell.position).forEach(
                 (mainIndex, vertexIndex) => {
                     if (mainIndex !== null) {

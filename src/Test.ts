@@ -20,7 +20,7 @@ export default class Test extends Scene {
     raycaster = new THREE.Raycaster()
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
-    dual = new Dual(new THREE.Vector3(3, 3, 3))
+    dual = new Dual(new THREE.Vector3(30, 30, 30))
 
     constructor(canvas: HTMLCanvasElement) {
         super(canvas)
@@ -127,15 +127,14 @@ export default class Test extends Scene {
         this.group.add(dualCube)
     }
     updateDual(): void {
-        this.dual.calculateDual()
-        for (let i = this.duals.length - 1; i >= 0; i--) {
-            const dualCube = this.duals[i]
+        this.duals.forEach((dualCube, index) => {
             this.group.remove(dualCube)
-            this.duals.splice(i, 1)
-        }
-
+        })
+        this.duals = []
+        this.dual.calculateDual()
         this.dual.secondary.forEach((dual, index) => {
             if (dual.value === 0) return
+
             const position = dual.position
             this.addDualCube(position)
         })
