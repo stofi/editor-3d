@@ -26,9 +26,9 @@ export default class Tiles {
                                 }, 100%, 50%)`,
                             })
                             mesh.material = material
-                            mesh.scale.set(0.25, -0.25, 0.25)
+                            mesh.scale.multiplyScalar(-0.25)
                             mesh.position.set(0, 0, 0)
-                            mesh.rotation.y += Math.PI
+                            // mesh.rotation.y += Math.PI
 
                             this.lib.set(child.name, mesh)
                         }
