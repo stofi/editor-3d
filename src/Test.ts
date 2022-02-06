@@ -29,7 +29,7 @@ export default class Test extends Scene {
     raycaster = new THREE.Raycaster()
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
-    dual = new Dual(new THREE.Vector3(3, 3, 3))
+    dual = new Dual(new THREE.Vector3(30, 30, 30))
     tiles = new Tiles()
     labelRenderer = new CSS2DRenderer()
 
@@ -39,7 +39,7 @@ export default class Test extends Scene {
         this.scene.add(this.group)
         this.addAmbientLight()
         this.addDirectLight()
-        this.addAxisHelper()
+        // this.addAxisHelper()
 
         // labels
         this.labelRenderer.setSize(this.sizes.width, this.sizes.height)
@@ -59,6 +59,7 @@ export default class Test extends Scene {
         const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
         position && cube.position.copy(position)
         cube.layers.enable(1)
+        cube.visible = false
         this.cubes.push(cube)
         this.group.add(cube)
         this.dual.main[mainIndex].value = 1
