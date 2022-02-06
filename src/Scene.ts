@@ -42,7 +42,6 @@ export default class Scene {
 
         this.onResize()
         this.addListeners()
-        this.tick()
     }
     addListeners() {
         window.addEventListener('resize', this.onResize.bind(this))
@@ -72,5 +71,8 @@ export default class Scene {
         this.renderer.render(this.scene, this.camera)
 
         window.requestAnimationFrame(this.tick.bind(this))
+    }
+    start() {
+        this.tick()
     }
 }

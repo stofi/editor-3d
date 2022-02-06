@@ -1,10 +1,18 @@
 import Scene from './Scene'
 import * as THREE from 'three'
+
+import {
+    CSS2DRenderer,
+    CSS2DObject,
+} from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+
 import Dual from './Dual'
+import Tiles from './Tiles'
 
 export default class Test extends Scene {
     cubes: THREE.Mesh[] = []
     duals: THREE.Mesh[] = []
+    labels: any[] = []
     ambientLight?: THREE.AmbientLight
     directLight?: THREE.DirectionalLight
 
@@ -12,6 +20,7 @@ export default class Test extends Scene {
     cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1)
     cubeMaterial = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
+        wireframe: true,
     })
     dualMaterial = new THREE.MeshStandardMaterial({
         color: 0xff33ff,
@@ -20,7 +29,9 @@ export default class Test extends Scene {
     raycaster = new THREE.Raycaster()
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
-    dual = new Dual(new THREE.Vector3(30, 30, 30))
+    dual = new Dual(new THREE.Vector3(3, 3, 3))
+    tiles = new Tiles()
+    labelRenderer = new CSS2DRenderer()
 
     constructor(canvas: HTMLCanvasElement) {
         super(canvas)
@@ -29,6 +40,16 @@ export default class Test extends Scene {
         this.addAmbientLight()
         this.addDirectLight()
         this.addAxisHelper()
+
+        // labels
+        this.labelRenderer.setSize(this.sizes.width, this.sizes.height)
+        this.labelRenderer.domElement.style.position = 'absolute'
+        this.labelRenderer.domElement.style.top = '0'
+        this.labelRenderer.domElement.style.pointerEvents = 'none'
+        document.body.appendChild(this.labelRenderer.domElement)
+    }
+    async loadTiles() {
+        return this.tiles.load()
     }
 
     addCube(position = new THREE.Vector3(0, 0, 0)) {
@@ -120,9 +141,15 @@ export default class Test extends Scene {
         }
         this.updateDual()
     }
-    addDualCube(position?: THREE.Vector3) {
-        const dualCube = new THREE.Mesh(this.cubeGeometry, this.dualMaterial)
+    addDualCube(position: THREE.Vector3, value: number) {
+        if (value === 0) return
+        const mesh = this.tiles.lib.get(`Cube${value}`)
+        // const dualCube = new THREE.Mesh(this.cubeGeometry, this.dualMaterial)
+
+        if (!mesh) return
+        const dualCube = mesh.clone()
         position && dualCube.position.copy(position).subScalar(0.5)
+
         this.duals.push(dualCube)
         this.group.add(dualCube)
     }
@@ -133,10 +160,8 @@ export default class Test extends Scene {
         this.duals = []
         this.dual.calculateDual()
         this.dual.secondary.forEach((dual, index) => {
-            if (dual.value === 0) return
-
             const position = dual.position
-            this.addDualCube(position)
+            this.addDualCube(position, dual.value)
         })
     }
     addListeners(): void {
@@ -150,6 +175,24 @@ export default class Test extends Scene {
     }
     tick(): void {
         super.tick()
+        if (this.labelRenderer) {
+            this.labelRenderer.render(this.scene, this.camera)
+        }
+    }
+    addLabels() {
+        this.dual.secondary.forEach((cell, index) => {
+            const element = document.createElement('div')
+            const value = cell.value
+            const position = cell.position
+            const label = new CSS2DObject(element)
+            element.innerText = `${value}`
+            element.classList.add('label')
+            element.dataset.value = `${value}`
+            label.position.copy(position)
+            label.visible = true
+            this.labels.push(label)
+            this.group.add(label)
+        })
     }
     center(): void {
         new THREE.Box3()

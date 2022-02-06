@@ -115,15 +115,25 @@ export default class Dual {
         return this.positionToIndex(pos)
     }
     secondaryToMain(position: Vector3): optionalNumber[] {
+        // return [
+        //     this.nxny(position),
+        //     this.nxnynz(position),
+        //     this.nynz(position),
+        //     this.ny(position),
+        //     this.nx(position),
+        //     this.nxnz(position),
+        //     this.nz(position),
+        //     this.positionToIndex(position),
+        // ]
         return [
-            this.nxny(position),
-            this.nxnynz(position),
-            this.nynz(position),
-            this.ny(position),
-            this.nx(position),
             this.nxnz(position),
-            this.nz(position),
+            this.nx(position),
             this.positionToIndex(position),
+            this.nz(position),
+            this.nxnynz(position),
+            this.nxny(position),
+            this.ny(position),
+            this.nynz(position),
         ]
     }
     calculateDual() {
@@ -132,7 +142,7 @@ export default class Dual {
             this.secondaryToMain(cell.position).forEach(
                 (mainIndex, vertexIndex) => {
                     if (mainIndex !== null) {
-                        const value = this.main[mainIndex].value
+                        const value = this.main[mainIndex]?.value ?? 0
 
                         cell.value |= value << vertexIndex
                     }

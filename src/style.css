@@ -18,3 +18,10 @@ body {
     left: 0;
     outline: none;
 }
+.label {
+    color: white;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-family: monospace;
+    /* display: block !important; */
+}
