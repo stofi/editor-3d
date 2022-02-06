@@ -15,10 +15,10 @@ export default class Scene {
     clock: THREE.Clock
     controls: OrbitControls
     elapsedTime = 0
+    initialized = false
 
     constructor(canvas: HTMLCanvasElement) {
         this.gui = new dat.GUI()
-        this.gui.hide()
         this.canvas = canvas
         this.scene = new THREE.Scene()
         this.sizes = {
@@ -74,6 +74,7 @@ export default class Scene {
         window.requestAnimationFrame(this.tick.bind(this))
     }
     start() {
+        this.initialized = true
         this.tick()
     }
 }

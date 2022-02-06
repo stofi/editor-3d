@@ -32,6 +32,7 @@ export default class Test extends Scene {
     dual = new Dual(new THREE.Vector3(30, 30, 30))
     tiles = new Tiles()
     labelRenderer = new CSS2DRenderer()
+    showHitBoxes = false
 
     constructor(canvas: HTMLCanvasElement) {
         super(canvas)
@@ -47,21 +48,29 @@ export default class Test extends Scene {
         this.labelRenderer.domElement.style.top = '0'
         this.labelRenderer.domElement.style.pointerEvents = 'none'
         document.body.appendChild(this.labelRenderer.domElement)
+        this.gui.add(this, 'save')
+        this.gui.add(this, 'clear')
+        this.gui.add(this, 'showHitBoxes').onChange(() => {
+            this.cubes.forEach((cube) => {
+                cube.visible = this.showHitBoxes
+            })
+        })
     }
     async loadTiles() {
         return this.tiles.load()
     }
 
-    addCube(position = new THREE.Vector3(0, 0, 0)) {
+    addCube(position = new THREE.Vector3(0, 0, 0), skipDual = false) {
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
 
         const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
         position && cube.position.copy(position)
         cube.layers.enable(1)
-        cube.visible = false
+        cube.visible = this.showHitBoxes
         this.cubes.push(cube)
         this.group.add(cube)
+        if (skipDual) return
         this.dual.main[mainIndex].value = 1
         this.updateDual()
     }
@@ -200,5 +209,72 @@ export default class Test extends Scene {
             .setFromObject(this.group)
             .getCenter(this.group.position)
             .multiplyScalar(-1)
+    }
+    export(): string {
+        const main = this.dual.main
+        const secondary = this.dual.secondary
+        const camera = this.camera.position.toArray()
+        return JSON.stringify({ main, secondary, camera })
+    }
+    import(data: string): void {
+        if (this.initialized) return
+        const { main, secondary, camera } = JSON.parse(data)
+        const mapData = ({
+            value,
+            position,
+        }: {
+            value: number
+            position: {
+                x: number
+                y: number
+                z: number
+            }
+        }) => ({
+            value,
+            position: new THREE.Vector3(position.x, position.y, position.z),
+        })
+        this.dual.main = main.map(mapData)
+        this.dual.secondary = secondary.map(mapData)
+        this.camera.position.fromArray(camera)
+        this.cubes = []
+        this.duals = []
+        this.dual.main.forEach((cell) => {
+            if (cell.value) {
+                this.addCube(cell.position)
+            }
+        })
+        this.updateDual()
+    }
+    save() {
+        localStorage.setItem('scene', this.export())
+    }
+    clear() {
+        localStorage.removeItem('scene')
+        const mapData = ({
+            value,
+            position,
+        }: {
+            value: number
+            position: {
+                x: number
+                y: number
+                z: number
+            }
+        }) => ({
+            value: 0,
+            position: new THREE.Vector3(position.x, position.y, position.z),
+        })
+        this.dual.main = this.dual.main.map(mapData)
+        this.dual.secondary = this.dual.secondary.map(mapData)
+        this.cubes.forEach((cube) => {
+            this.group.remove(cube)
+        })
+        this.duals.forEach((dual) => {
+            this.group.remove(dual)
+        })
+        this.cubes = []
+        this.duals = []
+
+        this.addCube(new THREE.Vector3(15, 15, 15))
     }
 }

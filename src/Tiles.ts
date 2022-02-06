@@ -4,8 +4,8 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 export default class Tiles {
     material = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        opacity: 0.5,
+        color: '#987e6f',
+        // opacity: 0.5,
         wireframe: true,
     })
     loader = new GLTFLoader()
@@ -19,11 +19,15 @@ export default class Tiles {
                     gltf.scene.children.forEach((child, index) => {
                         if (child.type === 'Mesh') {
                             const mesh = child as THREE.Mesh
-
+                            const saturation =
+                                Math.floor(
+                                    (index / gltf.scene.children.length) * 1000
+                                ) % 100
                             const material = new THREE.MeshStandardMaterial({
                                 color: `hsl(${
                                     (index * 360) / gltf.scene.children.length
-                                }, 100%, 50%)`,
+                                }, ${saturation}%, 50%)`,
+                                // wireframe: true,
                             })
                             mesh.material = material
                             mesh.scale.multiplyScalar(-0.25)
