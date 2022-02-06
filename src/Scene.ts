@@ -18,6 +18,7 @@ export default class Scene {
 
     constructor(canvas: HTMLCanvasElement) {
         this.gui = new dat.GUI()
+        this.gui.hide()
         this.canvas = canvas
         this.scene = new THREE.Scene()
         this.sizes = {

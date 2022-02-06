@@ -14,7 +14,7 @@ export default class Tiles {
     load() {
         return new Promise((resolve, reject) => {
             this.loader.load(
-                './tiles.gltf',
+                './tiles2.gltf',
                 (gltf: GLTF) => {
                     gltf.scene.children.forEach((child, index) => {
                         if (child.type === 'Mesh') {
@@ -27,6 +27,7 @@ export default class Tiles {
                             })
                             mesh.material = material
                             mesh.scale.multiplyScalar(-0.25)
+                            mesh.scale.y *= -1
                             mesh.position.set(0, 0, 0)
                             // mesh.rotation.y += Math.PI
 
