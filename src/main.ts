@@ -70,9 +70,9 @@ This will create up to ${complexity} objects.
     test.gui.add(params, 'generate')
     test.gui.add(params, 'size', 1, 20).step(1)
     test.gui.add(params, 'noiseScale', 0, 1).step(0.01)
-    test.gui.add(params.noiseScale3, 'x', -1, 1).step(0.01)
-    test.gui.add(params.noiseScale3, 'y', -1, 1).step(0.01)
-    test.gui.add(params.noiseScale3, 'z', -1, 1).step(0.01)
+    test.gui.add(params.noiseScale3, 'x', 0, 1).step(0.01)
+    test.gui.add(params.noiseScale3, 'y', 0, 1).step(0.01)
+    test.gui.add(params.noiseScale3, 'z', 0, 1).step(0.01)
     if (sceneData) {
         test.import(sceneData)
     } else {

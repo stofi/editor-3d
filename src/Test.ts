@@ -1,5 +1,6 @@
 import Scene from './Scene'
 import * as THREE from 'three'
+import _ from 'lodash'
 
 import {
     CSS2DRenderer,
@@ -27,6 +28,7 @@ export default class Test extends Scene {
         wireframe: true,
     })
     raycaster = new THREE.Raycaster()
+    raycasterHover = new THREE.Raycaster()
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
     dual: Dual
@@ -36,6 +38,7 @@ export default class Test extends Scene {
     onTick?: () => void
     disableEdit = false
     swapControls = false
+    hover: string
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -44,6 +47,7 @@ export default class Test extends Scene {
         super(canvas)
         this.dual = new Dual(dualSize)
         this.raycaster.layers.set(1)
+        this.raycasterHover.layers.set(0)
         this.scene.add(this.group)
         this.addAmbientLight()
         this.addDirectLight()
@@ -83,6 +87,8 @@ export default class Test extends Scene {
         })
         this.gui.add(this, 'disableEdit')
         this.gui.add(this, 'swapControls')
+        this.hover = ''
+        this.gui.add(this, 'hover').listen() //.disable()
     }
     async loadTiles() {
         return this.tiles.load()
@@ -131,10 +137,15 @@ export default class Test extends Scene {
         this.raycaster.setFromCamera(this.mouse, this.camera)
         return this.raycaster.intersectObjects(this.cubes)
     }
+    getHover(): THREE.Intersection[] {
+        this.raycasterHover.setFromCamera(this.mouse, this.camera)
+        return this.raycasterHover.intersectObjects(this.duals)
+    }
 
     onMouseMove(event: MouseEvent) {
         this.mouse.x = (event.clientX / this.canvas.clientWidth) * 2 - 1
         this.mouse.y = -(event.clientY / this.canvas.clientHeight) * 2 + 1
+        this.handleHoverThrottled()
     }
     onTouchStart(event: TouchEvent): void {
         this.lastTouch = event.timeStamp
@@ -178,6 +189,10 @@ export default class Test extends Scene {
             this.handleAdd()
         }
     }
+    handleHoverThrottled = _.throttle(() => {
+        const intersects = this.getHover()
+        this.hover = intersects.length > 0 ? intersects[0].object.name : ''
+    }, 300)
     handleAdd() {
         const intersects = this.getIntersects()
         if (intersects.length > 0) {
