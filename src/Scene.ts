@@ -31,9 +31,9 @@ export default class Scene {
             0.1,
             100
         )
-        this.camera.position.x = 3
-        this.camera.position.y = 3
-        this.camera.position.z = 3
+        this.camera.position.x = 10
+        this.camera.position.y = 10
+        this.camera.position.z = 10
         this.scene.add(this.camera)
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,

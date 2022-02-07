@@ -29,13 +29,18 @@ export default class Test extends Scene {
     raycaster = new THREE.Raycaster()
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
-    dual = new Dual(new THREE.Vector3(30, 30, 30))
+    dual: Dual
     tiles = new Tiles()
     labelRenderer = new CSS2DRenderer()
     showHitBoxes = false
+    onTick?: () => void
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(
+        canvas: HTMLCanvasElement,
+        dualSize = new THREE.Vector3(10, 10, 10)
+    ) {
         super(canvas)
+        this.dual = new Dual(dualSize)
         this.raycaster.layers.set(1)
         this.scene.add(this.group)
         this.addAmbientLight()
@@ -73,6 +78,18 @@ export default class Test extends Scene {
         if (skipDual) return
         this.dual.main[mainIndex].value = 1
         this.updateDual()
+    }
+    removeCube(position: THREE.Vector3): void {
+        const mainIndex = this.dual.positionToIndex(position)
+        if (mainIndex === null) return
+        const index = this.cubes.findIndex((cube) => {
+            return cube.position.equals(position)
+        })
+        if (index > -1) {
+            this.dual.main[mainIndex].value = 0
+            this.group.remove(this.cubes[index])
+            this.cubes.splice(index, 1)
+        }
     }
     addAmbientLight() {
         this.ambientLight = new THREE.AmbientLight(0x404040)
@@ -188,6 +205,7 @@ export default class Test extends Scene {
         if (this.labelRenderer) {
             this.labelRenderer.render(this.scene, this.camera)
         }
+        this.onTick && this.onTick()
     }
     addLabels() {
         this.dual.secondary.forEach((cell, index) => {
@@ -214,7 +232,8 @@ export default class Test extends Scene {
         const main = this.dual.main
         const secondary = this.dual.secondary
         const camera = this.camera.position.toArray()
-        return JSON.stringify({ main, secondary, camera })
+        const size = this.dual.mainSize.x
+        return JSON.stringify({ main, secondary, camera, size })
     }
     import(data: string): void {
         if (this.initialized) return
@@ -240,7 +259,7 @@ export default class Test extends Scene {
         this.duals = []
         this.dual.main.forEach((cell) => {
             if (cell.value) {
-                this.addCube(cell.position)
+                this.addCube(cell.position, false)
             }
         })
         this.updateDual()
@@ -249,6 +268,8 @@ export default class Test extends Scene {
         localStorage.setItem('scene', this.export())
     }
     clear() {
+        const agree = confirm('Are you sure you want to clear the scene?')
+        if (!agree) return
         localStorage.removeItem('scene')
         const mapData = ({
             value,
@@ -276,5 +297,8 @@ export default class Test extends Scene {
         this.duals = []
 
         this.addCube(new THREE.Vector3(15, 15, 15))
+    }
+    resize(newSize: THREE.Vector3) {
+        this.dual.resize(newSize)
     }
 }

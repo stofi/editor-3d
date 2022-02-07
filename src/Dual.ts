@@ -136,6 +136,18 @@ export default class Dual {
             this.nynz(position),
         ]
     }
+    getYPlane(y: number, main = true) {
+        const collection = main ? this.main : this.secondary
+        return collection.filter((cell) => cell.position.y === y)
+    }
+    getXPlane(x: number, main = true) {
+        const collection = main ? this.main : this.secondary
+        return collection.filter((cell) => cell.position.x === x)
+    }
+    getZPlane(z: number, main = true) {
+        const collection = main ? this.main : this.secondary
+        return collection.filter((cell) => cell.position.z === z)
+    }
     calculateDual() {
         this.secondary.forEach((cell) => {
             cell.value = 0
@@ -150,9 +162,10 @@ export default class Dual {
             )
         })
     }
-    fillMainWithNoise() {
-        this.main.forEach((cell) => {
-            cell.value = Math.random() > 0.5 ? 1 : 0
-        })
+    resize(size: Vector3) {
+        this.mainSize = size.ceil()
+        this.secondarySize = this.mainSize.clone().addScalar(1)
+        this.main = this.create(this.mainSize)
+        this.secondary = this.create(this.secondarySize)
     }
 }
