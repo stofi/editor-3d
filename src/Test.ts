@@ -34,6 +34,8 @@ export default class Test extends Scene {
     labelRenderer = new CSS2DRenderer()
     showHitBoxes = false
     onTick?: () => void
+    disableEdit = false
+    swapControls = false
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -79,6 +81,8 @@ export default class Test extends Scene {
             // this.tiles.material.vertexColors = false
             this.tiles.material.needsUpdate = true
         })
+        this.gui.add(this, 'disableEdit')
+        this.gui.add(this, 'swapControls')
     }
     async loadTiles() {
         return this.tiles.load()
@@ -136,26 +140,43 @@ export default class Test extends Scene {
         this.lastTouch = event.timeStamp
     }
     onTouchEnd(event: TouchEvent): void {
+        if (this.disableEdit) return
         const longpress = event.timeStamp - this.lastTouch > 500
-        console.log(longpress, event.timeStamp, this.lastTouch)
 
         const touch = ((event.changedTouches || [])[0] || {}) as Touch
 
         this.mouse.x = (touch.clientX / this.canvas.clientWidth) * 2 - 1
         this.mouse.y = -(touch.clientY / this.canvas.clientHeight) * 2 + 1
-
-        if (longpress) {
+        if (!this.swapControls) {
+            if (longpress) {
+                this.handleRemove()
+            } else {
+                this.handleAdd()
+            }
+        } else {
+            if (longpress) {
+                this.handleAdd()
+            } else {
+                this.handleRemove()
+            }
+        }
+    }
+    onClick(event: MouseEvent): void {
+        if (this.disableEdit) return
+        if (!this.swapControls) {
+            this.handleAdd()
+        } else {
+            this.handleRemove()
+        }
+    }
+    onRightClick(event: MouseEvent): void {
+        if (this.disableEdit) return
+        event.preventDefault()
+        if (!this.swapControls) {
             this.handleRemove()
         } else {
             this.handleAdd()
         }
-    }
-    onClick(event: MouseEvent): void {
-        this.handleAdd()
-    }
-    onRightClick(event: MouseEvent): void {
-        event.preventDefault()
-        this.handleRemove()
     }
     handleAdd() {
         const intersects = this.getIntersects()
