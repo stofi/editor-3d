@@ -4,9 +4,10 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 export default class Tiles {
     material = new THREE.MeshStandardMaterial({
-        color: '#987e6f',
+        // color: '#987e6f',
         // opacity: 0.5,
-        wireframe: true,
+        // wireframe: true,
+        vertexColors: true,
     })
     loader = new GLTFLoader()
     lib = new Map()
@@ -23,13 +24,31 @@ export default class Tiles {
                                 Math.floor(
                                     (index / gltf.scene.children.length) * 1000
                                 ) % 100
-                            const material = new THREE.MeshStandardMaterial({
-                                color: `hsl(${
+
+                            const colors = new Float32Array(
+                                mesh.geometry.attributes.position.count * 3
+                            )
+                            const color = new THREE.Color(
+                                `hsl(${
                                     (index * 360) / gltf.scene.children.length
-                                }, ${saturation}%, 50%)`,
-                                // wireframe: true,
-                            })
-                            mesh.material = material
+                                }, ${saturation}%, 50%)`
+                            )
+
+                            for (
+                                let i = 0;
+                                i < mesh.geometry.attributes.position.count;
+                                i++
+                            ) {
+                                const i3 = i * 3
+                                colors[i3] = color.r
+                                colors[i3 + 1] = color.g
+                                colors[i3 + 2] = color.b
+                            }
+                            mesh.geometry.setAttribute(
+                                'color',
+                                new THREE.BufferAttribute(colors, 3)
+                            )
+                            mesh.material = this.material
                             mesh.scale.multiplyScalar(-0.25)
                             mesh.scale.y *= -1
                             mesh.position.set(0, 0, 0)

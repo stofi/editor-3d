@@ -53,12 +53,31 @@ export default class Test extends Scene {
         this.labelRenderer.domElement.style.top = '0'
         this.labelRenderer.domElement.style.pointerEvents = 'none'
         document.body.appendChild(this.labelRenderer.domElement)
+
+        let color = new THREE.Color(0xffffff)
         this.gui.add(this, 'save')
         this.gui.add(this, 'clear')
         this.gui.add(this, 'showHitBoxes').onChange(() => {
             this.cubes.forEach((cube) => {
                 cube.visible = this.showHitBoxes
             })
+        })
+        this.gui.add(this.tiles.material, 'wireframe').onChange(() => {
+            this.tiles.material.needsUpdate = true
+        })
+
+        this.gui.add(this.tiles.material, 'vertexColors').onChange(() => {
+            if (this.tiles.material.vertexColors) {
+                color = this.tiles.material.color.clone()
+                this.tiles.material.color = new THREE.Color(0xffffff)
+            } else {
+                this.tiles.material.color = color
+            }
+            this.tiles.material.needsUpdate = true
+        })
+        this.gui.addColor(this.tiles.material, 'color').onChange(() => {
+            // this.tiles.material.vertexColors = false
+            this.tiles.material.needsUpdate = true
         })
     }
     async loadTiles() {
