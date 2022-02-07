@@ -2,16 +2,27 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
+const textureLoader = new THREE.TextureLoader()
+
 export default class Tiles {
+    loader = new GLTFLoader()
+    lib = new Map()
+    loaded = false
+    colorTexture = textureLoader.load('textures/bricks/color.jpg')
+    normalTexture = textureLoader.load('textures/bricks/normal.jpg')
+    roughessTexture = textureLoader.load('textures/bricks/roughess.jpg')
+    aoTexture = textureLoader.load('textures/bricks/ambientOcclusion.jpg')
     material = new THREE.MeshStandardMaterial({
         // color: '#987e6f',
         // opacity: 0.5,
         // wireframe: true,
         vertexColors: true,
+        map: this.colorTexture,
+        normalMap: this.normalTexture,
+        aoMap: this.aoTexture,
+        aoMapIntensity: 1,
+        roughnessMap: this.roughessTexture,
     })
-    loader = new GLTFLoader()
-    lib = new Map()
-    loaded = false
     load() {
         return new Promise((resolve, reject) => {
             this.loader.load(
