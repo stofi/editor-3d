@@ -255,10 +255,16 @@ export default class Test extends Scene {
         this.dual.main = main.map(mapData)
         this.dual.secondary = secondary.map(mapData)
         this.camera.position.fromArray(camera)
+        this.cubes.forEach((cube) => {
+            this.group.remove(cube)
+        })
+        this.duals.forEach((dualCube) => {
+            this.group.remove(dualCube)
+        })
         this.cubes = []
         this.duals = []
         this.dual.main.forEach((cell) => {
-            if (cell.value) {
+            if (cell.value > 0.5) {
                 this.addCube(cell.position, false)
             }
         })
