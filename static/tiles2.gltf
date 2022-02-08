@@ -4960,11 +4960,6 @@
     "materials" : [
         {
             "doubleSided" : true,
-            "emissiveFactor" : [
-                1,
-                1,
-                1
-            ],
             "name" : "Material",
             "pbrMetallicRoughness" : {}
         }

@@ -60,7 +60,7 @@ export default class Test extends Scene {
         this.labelRenderer.domElement.style.pointerEvents = 'none'
         document.body.appendChild(this.labelRenderer.domElement)
 
-        let color = new THREE.Color(0xffffff)
+        const color = new THREE.Color(0xffffff)
         this.gui.add(this, 'save')
         this.gui.add(this, 'clear')
         this.gui.add(this, 'showHitBoxes').onChange(() => {
@@ -72,19 +72,23 @@ export default class Test extends Scene {
             this.tiles.material.needsUpdate = true
         })
 
-        this.gui.add(this.tiles.material, 'vertexColors').onChange(() => {
-            if (this.tiles.material.vertexColors) {
-                color = this.tiles.material.color.clone()
-                this.tiles.material.color = new THREE.Color(0xffffff)
-            } else {
-                this.tiles.material.color = color
-            }
-            this.tiles.material.needsUpdate = true
-        })
-        this.gui.addColor(this.tiles.material, 'color').onChange(() => {
-            // this.tiles.material.vertexColors = false
-            this.tiles.material.needsUpdate = true
-        })
+        // this.gui.add(this.tiles.material, 'vertexColors').onChange(() => {
+        //     if (this.tiles.material.vertexColors) {
+        //         if (this.tiles.material.color) {
+        //             color = this.tiles.material.color.clone()
+        //             this.tiles.material.color = new THREE.Color(0xffffff)
+        //         }
+        //     } else {
+        //         if (this.tiles.material.color) {
+        //             this.tiles.material.color = color
+        //         }
+        //     }
+        //     this.tiles.material.needsUpdate = true
+        // })
+        // this.gui.addColor(this.tiles.material, 'color').onChange(() => {
+        //     // this.tiles.material.vertexColors = false
+        //     this.tiles.material.needsUpdate = true
+        // })
         this.gui.add(this, 'disableEdit')
         this.gui.add(this, 'swapControls')
         this.hover = ''
