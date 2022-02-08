@@ -38,6 +38,8 @@ export default class Scene {
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
         })
+        this.renderer.shadowMap.enabled = true
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
         this.clock = new THREE.Clock()
         this.controls = new OrbitControls(this.camera, this.canvas)
 

@@ -39,6 +39,8 @@ export default class Test extends Scene {
     disableEdit = false
     swapControls = false
     hover: string
+    queue: THREE.Vector3[] = []
+    queueStep = 100
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -60,7 +62,7 @@ export default class Test extends Scene {
         this.labelRenderer.domElement.style.pointerEvents = 'none'
         document.body.appendChild(this.labelRenderer.domElement)
 
-        const color = new THREE.Color(0xffffff)
+        let color = new THREE.Color(0xffffff)
         this.gui.add(this, 'save')
         this.gui.add(this, 'clear')
         this.gui.add(this, 'showHitBoxes').onChange(() => {
@@ -71,28 +73,38 @@ export default class Test extends Scene {
         this.gui.add(this.tiles.material, 'wireframe').onChange(() => {
             this.tiles.material.needsUpdate = true
         })
-
-        // this.gui.add(this.tiles.material, 'vertexColors').onChange(() => {
-        //     if (this.tiles.material.vertexColors) {
-        //         if (this.tiles.material.color) {
-        //             color = this.tiles.material.color.clone()
-        //             this.tiles.material.color = new THREE.Color(0xffffff)
-        //         }
-        //     } else {
-        //         if (this.tiles.material.color) {
-        //             this.tiles.material.color = color
-        //         }
-        //     }
-        //     this.tiles.material.needsUpdate = true
-        // })
-        // this.gui.addColor(this.tiles.material, 'color').onChange(() => {
-        //     // this.tiles.material.vertexColors = false
-        //     this.tiles.material.needsUpdate = true
-        // })
+        if ((this.tiles.material as any).color) {
+            const mat = this.tiles.material as any
+            this.gui.add(mat, 'vertexColors').onChange(() => {
+                if (mat.vertexColors) {
+                    color = mat.color.clone()
+                    mat.color = new THREE.Color(0xffffff)
+                } else {
+                    mat.color = color
+                }
+                mat.needsUpdate = true
+            })
+            this.gui.addColor(mat, 'color').onChange(() => {
+                // mat.vertexColors = false
+                mat.needsUpdate = true
+            })
+        } else {
+            const mat = this.tiles.material as any
+            this.gui
+                .add(mat.noiseScale, 'value')
+                .min(0.001)
+                .max(10.0)
+                .step(0.001)
+            this.gui.add(mat.noiseFactor, 'value').min(0.0).max(2.0).step(0.01)
+            // .onChange(() => {
+            //     this.tiles.material.needsUpdate = true
+            // })
+        }
         this.gui.add(this, 'disableEdit')
         this.gui.add(this, 'swapControls')
         this.hover = ''
         this.gui.add(this, 'hover').listen() //.disable()
+        this.gui.add(this, 'updateDual')
     }
     async loadTiles() {
         return this.tiles.load()
@@ -130,7 +142,16 @@ export default class Test extends Scene {
     }
     addDirectLight() {
         this.directLight = new THREE.DirectionalLight(0xffffff, 1)
-        this.directLight.position.set(5, 15, 5)
+        this.directLight.castShadow = true
+        this.directLight.shadow.mapSize.width = 2048
+        this.directLight.shadow.mapSize.height = 2048
+        this.directLight.shadow.camera.near = 0.5
+        this.directLight.shadow.camera.far = 30
+        this.directLight.shadow.camera.left = -15
+        this.directLight.shadow.camera.right = 15
+        this.directLight.shadow.camera.top = 15
+        this.directLight.shadow.camera.bottom = -15
+        this.directLight.position.set(20, 20, 20)
         this.scene.add(this.directLight)
     }
     addAxisHelper() {
@@ -264,6 +285,15 @@ export default class Test extends Scene {
         if (this.labelRenderer) {
             this.labelRenderer.render(this.scene, this.camera)
         }
+        if (this.queue.length) {
+            for (let i = 0; i < this.queueStep && i < this.queue.length; i++) {
+                this.addCube(this.queue[i], true)
+            }
+            this.queue.splice(0, this.queueStep)
+            if (this.queue.length === 0) {
+                this.updateDual()
+            }
+        }
         this.onTick && this.onTick()
     }
     addLabels() {
@@ -288,8 +318,9 @@ export default class Test extends Scene {
             .multiplyScalar(-1)
     }
     export(): string {
-        const main = this.dual.main
-        const secondary = this.dual.secondary
+        const mapData = (cell: { value: number }) => cell.value
+        const main = this.dual.main.map(mapData)
+        const secondary = this.dual.secondary.map(mapData)
         const camera = this.camera.position.toArray()
         const size = this.dual.mainSize.x
         return JSON.stringify({ main, secondary, camera, size })
@@ -297,22 +328,16 @@ export default class Test extends Scene {
     import(data: string): void {
         if (this.initialized) return
         const { main, secondary, camera } = JSON.parse(data)
-        const mapData = ({
-            value,
-            position,
-        }: {
-            value: number
-            position: {
-                x: number
-                y: number
-                z: number
+        const mapData =
+            (main = true) =>
+            (value: number, index: number) => {
+                const collection = main ? this.dual.main : this.dual.secondary
+                const cell = collection[index]
+                cell.value = value
+                return cell
             }
-        }) => ({
-            value,
-            position: new THREE.Vector3(position.x, position.y, position.z),
-        })
-        this.dual.main = main.map(mapData)
-        this.dual.secondary = secondary.map(mapData)
+        this.dual.main = main.map(mapData(true))
+        this.dual.secondary = secondary.map(mapData(false))
         this.camera.position.fromArray(camera)
         this.cubes.forEach((cube) => {
             this.group.remove(cube)
@@ -324,10 +349,9 @@ export default class Test extends Scene {
         this.duals = []
         this.dual.main.forEach((cell) => {
             if (cell.value > 0.5) {
-                this.addCube(cell.position, false)
+                this.queue.push(cell.position)
             }
         })
-        this.updateDual()
     }
     save() {
         localStorage.setItem('scene', this.export())

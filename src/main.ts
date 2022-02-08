@@ -38,27 +38,44 @@ This will create up to ${complexity} objects.
         let i = 0
         const batch = Math.min(params.size ** 2, 150)
         console.time('loop')
+
+        test.cubes.forEach((cube) => {
+            test.group.remove(cube)
+        })
+        test.duals.forEach((dualCube) => {
+            test.group.remove(dualCube)
+        })
+        test.cubes = []
+        test.duals = []
+        test.dual.main.forEach((cell) => {
+            const x = cell.position.x
+            const y = cell.position.y
+            const z = cell.position.z
+            const scale = params.noiseScale ?? 0.1
+            const noise = simplex.noise3D(
+                x * scale * params.noiseScale3.x,
+                y * scale * params.noiseScale3.y,
+                z * scale * params.noiseScale3.z
+            )
+            cell.value = noise
+        })
         test.onTick = () => {
+            // loop end
             if (i >= test.dual.main.length) {
                 console.timeEnd('loop')
+                test.updateDual()
                 test.onTick = () => null
                 return
             }
             for (let j = 0; j < batch && i + j < test.dual.main.length; j++) {
                 const batchIndex = i + j
                 if (!test.dual.main[batchIndex]) continue
-                const x = test.dual.main[batchIndex].position.x
-                const y = test.dual.main[batchIndex].position.y
-                const z = test.dual.main[batchIndex].position.z
-                const scale = params.noiseScale ?? 0.1
-                const noise = simplex.noise3D(
-                    x * scale * params.noiseScale3.x,
-                    y * scale * params.noiseScale3.y,
-                    z * scale * params.noiseScale3.z
-                )
-                test.dual.main[batchIndex].value = noise
+
+                const noise = test.dual.main[batchIndex].value
                 if (noise > 0.5) {
-                    test.addCube(test.dual.main[batchIndex].position)
+                    test.addCube(test.dual.main[batchIndex].position, true)
+
+                    test.dual.main[batchIndex].value = 1
                 } else {
                     test.removeCube(test.dual.main[batchIndex].position)
                 }

@@ -155,6 +155,7 @@ export default class Dual {
                 (mainIndex, vertexIndex) => {
                     if (mainIndex !== null) {
                         const value = this.main[mainIndex]?.value ?? 0
+                        const valueInt = value > 0.5 ? 1 : 0
 
                         cell.value |= value << vertexIndex
                     }
