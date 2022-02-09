@@ -22,6 +22,7 @@ export default class extends BaseScene {
     ambientLight?: THREE.AmbientLight
     directLight?: THREE.DirectionalLight
     stats: Stats
+    pixRatio = Math.min(window.devicePixelRatio, 2)
 
     constructor(canvas: HTMLCanvasElement) {
         super()
@@ -45,6 +46,12 @@ export default class extends BaseScene {
         this.addListeners()
         this.stats = Stats()
         document.body.appendChild(this.stats.dom)
+        this.gui
+            .add(this, 'pixRatio', 0.0001, 2)
+            .step(0.1)
+            .onFinishChange(() => {
+                this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
+            })
     }
     // Super overrides:
     tick() {
