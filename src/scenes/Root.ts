@@ -107,7 +107,7 @@ export default class extends BaseScene {
 
         // Update renderer
         this.renderer.setSize(this.sizes.width, this.sizes.height)
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
     }
 
     // Objects
