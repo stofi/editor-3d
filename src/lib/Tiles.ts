@@ -98,7 +98,7 @@ export default class Tiles {
                                 'color',
                                 new THREE.BufferAttribute(colors, 3)
                             )
-                            mesh.geometry.computeVertexNormals()
+                            // mesh.geometry.computeVertexNormals()
                             mesh.material = this.material
                             mesh.scale.multiplyScalar(-0.25)
                             mesh.scale.y *= -1
