@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import simplex from './simplex'
-
+THREE.MeshToonMaterial
 const myMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xff22ff,
     metalness: 0,
-    roughness: 1,
+    roughness: 1.0,
     reflectivity: 0.5,
     // vertexColors: true,
     transparent: true,

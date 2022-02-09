@@ -23,7 +23,10 @@ const main = async () => {
         root.camera!
     )
     root.addChild(editor)
+    console.time('load')
+
     await editor.loadTiles()
+    console.timeEnd('load')
     editor.generate()
 }
 main()

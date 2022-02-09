@@ -212,7 +212,8 @@ export default class Basic extends BaseScene {
         })
     }
     async loadTiles() {
-        return this.tiles.load()
+        await this.tiles.load()
+        this.updateDual()
     }
     generate() {
         const local = this.showHitBoxes
@@ -228,7 +229,6 @@ export default class Basic extends BaseScene {
         const simplex = new SimplexNoise()
         let i = 0
         const batch = Math.min(this.params.size ** 2, 150)
-        console.time('loop')
 
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
@@ -253,7 +253,6 @@ export default class Basic extends BaseScene {
         this.onTick = () => {
             // loop end
             if (i >= this.dual.main.length) {
-                console.timeEnd('loop')
                 this.updateDual()
                 this.onTick = () => {
                     this.cubes.forEach((cube) => {
@@ -360,6 +359,7 @@ export default class Basic extends BaseScene {
 
     // Objects
     addCube(position = new THREE.Vector3(0, 0, 0), skipDual = false) {
+        // debugger
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
 

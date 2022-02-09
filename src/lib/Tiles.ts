@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import myMaterial from '../shaders/experiment3'
 import { sha256 } from 'crypto-hash'
@@ -29,23 +30,31 @@ window.addEventListener('resize', () => {
 setUniforms(uniforms, window.innerWidth, window.innerHeight)
 
 export default class Tiles {
+    draco = new DRACOLoader()
     loader = new GLTFLoader()
     lib = new Map()
     loaded = false
     material = myMaterial
     hashes = new Map()
-    load() {
+    constructor() {
+        this.draco.setDecoderPath(
+            'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/libs/draco/'
+        )
+        this.draco.setDecoderConfig({ type: 'js' })
+
+        this.loader.setDRACOLoader(this.draco)
+    }
+    async load() {
         return new Promise((resolve, reject) => {
             this.loader.load(
                 './tiles2.gltf',
                 async (gltf: GLTF) => {
-                    gltf.scene.children.reduce(async (prev, child, index) => {
-                        await prev
-                        if (child.type === 'Mesh') {
+                    await gltf.scene.children.reduce(
+                        async (prev, child, index) => {
+                            await prev
+                            if (child.type !== 'Mesh') return
                             const mesh = child as THREE.Mesh
-                            if (index < 10) {
-                                console.log(child)
-                            }
+
                             const positionArray =
                                 mesh.geometry.attributes.position.array
                             const hash = await sha256(
@@ -56,7 +65,10 @@ export default class Tiles {
                             if (!this.hashes.has(hash)) {
                                 this.hashes.set(hash, mesh.geometry)
                             } else {
+                                mesh.geometry.dispose()
                                 mesh.geometry = this.hashes.get(hash)
+                                mesh.geometry.attributes.position.needsUpdate =
+                                    true
                             }
                             const saturation =
                                 Math.floor(
@@ -96,9 +108,9 @@ export default class Tiles {
                             // mesh.rotation.y += Math.PI
 
                             this.lib.set(child.name, mesh)
-                        }
-                    }, Promise.resolve())
-                    console.log(this.hashes)
+                        },
+                        Promise.resolve()
+                    )
 
                     this.loaded = true
                     resolve(true)
