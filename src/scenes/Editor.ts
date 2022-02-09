@@ -290,8 +290,9 @@ export default class Basic extends BaseScene {
         return JSON.stringify({ main, secondary, camera, size })
     }
     import(data: string): void {
-        if (this.initialized) return
-        const { main, secondary, camera } = JSON.parse(data)
+        // if (this.initialized) return
+        const { main, secondary, camera, size } = JSON.parse(data)
+        this.dual.resize(new THREE.Vector3(size, size, size))
         const mapData =
             (main = true) =>
             (value: number, index: number) => {
@@ -320,10 +321,15 @@ export default class Basic extends BaseScene {
     save() {
         localStorage.setItem('scene', this.export())
     }
+    load() {
+        const data = localStorage.getItem('scene')
+        if (data) {
+            this.import(data)
+        }
+    }
     clear() {
         const agree = confirm('Are you sure you want to clear the scene?')
         if (!agree) return
-        localStorage.removeItem('scene')
         const mapData = ({
             value,
             position,
@@ -397,6 +403,7 @@ export default class Basic extends BaseScene {
         }
         let color = new THREE.Color(0xffffff)
         this.gui.add(this, 'save')
+        this.gui.add(this, 'load')
         this.gui.add(this, 'clear')
         this.gui.add(this, 'showHitBoxes').onChange(() => {
             this.cubes.forEach((cube) => {
