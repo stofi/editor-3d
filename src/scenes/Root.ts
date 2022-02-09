@@ -52,6 +52,7 @@ export default class extends BaseScene {
             .onFinishChange(() => {
                 this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
             })
+            .name('Resolution')
     }
     // Super overrides:
     tick() {

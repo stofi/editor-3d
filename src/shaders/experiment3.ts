@@ -29,12 +29,43 @@ const customFragmentChunk = `
 #endif
 ${colorHook}
 `
+// const vertHook = 'vec3'
+const vertHook = '#include <morphtarget_vertex>'
+const vertFunctionHook = '#include <common>'
 
 const customFunctionChunk = `
 #ifdef USE_CUSTOM 
     ${simplex}
 #endif
 ${functionHook}
+`
+const customVertexChunk = `
+#ifdef USE_CUSTOM 
+    vec4 mvp = vec4(transformed,1.0);
+    vec4 glp = vec4(0.0);
+    #ifdef USE_INSTANCING
+        mvp = instanceMatrix * mvp;
+    #endif
+    mvp = modelMatrix * mvp;
+    glp = projectionMatrix * mvp;
+
+    vec3 pScaled = glp.xyz * pow(noiseFactor2, 0.6);
+    float r = (snoise(pScaled.xyz));
+    // normal;
+    float z = (1.0 - abs(glp.y)) * 0.1;
+    
+    float horizontal = abs(dot(normal, vec3(0.0, 1.0, 0.0)));
+    vec3 displace = ((1.0 - horizontal) * r) * normal *  z;
+    transformed += displace * noiseScale2;
+#endif
+${vertHook}
+`
+
+const customVertexFunctionChunk = `
+#ifdef USE_CUSTOM 
+    ${simplex}
+#endif
+${vertFunctionHook}
 `
 
 myMaterial.defines.USE_CUSTOM = '1'
@@ -47,6 +78,14 @@ myMaterial.userData = {
         value: 0.1,
     },
     noiseFactor: {
+        type: 'f',
+        value: 0.5,
+    },
+    noiseScale2: {
+        type: 'f',
+        value: 0.1,
+    },
+    noiseFactor2: {
         type: 'f',
         value: 0.5,
     },
@@ -77,9 +116,21 @@ myMaterial.onBeforeCompile = (shader) => {
     uniform float noiseFactor;
     uniform vec3 color1;
     uniform vec3 color2;
-    
+
     ${shader.fragmentShader}
     `
+    shader.vertexShader = `
+    uniform vec2 myValue;
+    uniform float uWidth;
+    uniform float uHeight;
+    uniform float noiseScale2;
+    uniform float noiseFactor2;
+    uniform vec3 color1;
+    uniform vec3 color2;
+    
+    ${shader.vertexShader}
+    `
+
     shader.fragmentShader = shader.fragmentShader.replace(
         functionHook,
         customFunctionChunk
@@ -87,6 +138,14 @@ myMaterial.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader.replace(
         colorHook,
         customFragmentChunk
+    )
+    shader.vertexShader = shader.vertexShader.replace(
+        vertFunctionHook,
+        customVertexFunctionChunk
+    )
+    shader.vertexShader = shader.vertexShader.replace(
+        vertHook,
+        customVertexChunk
     )
 }
 export default myMaterial

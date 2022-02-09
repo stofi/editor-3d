@@ -405,39 +405,68 @@ export default class Basic extends BaseScene {
             throw new Error('No GUI')
         }
         let color = new THREE.Color(0xffffff)
-        this.gui.add(this, 'save')
-        this.gui.add(this, 'load')
-        this.gui.add(this, 'clear')
-        this.gui.add(this, 'showHitBoxes').onChange(() => {
-            this.cubes.forEach((cube) => {
-                cube.visible = this.showHitBoxes
+        this.gui.add(this, 'save').name('Save')
+        this.gui.add(this, 'load').name('Load')
+        this.gui.add(this, 'clear').name('Clear')
+
+        this.gui.add(this, 'disableEdit').name('Disable editing')
+        this.gui.add(this, 'swapControls').name('Swap controls')
+        this.gui
+            .add(this, 'showHitBoxes')
+            .onChange(() => {
+                this.cubes.forEach((cube) => {
+                    cube.visible = this.showHitBoxes
+                })
             })
-        })
-        this.gui.add(this.tiles.material, 'wireframe').onChange(() => {
-            this.tiles.material.needsUpdate = true
-        })
+            .name('Show hit boxes')
+        this.gui
+            .add(this.tiles.material, 'wireframe')
+            .onChange(() => {
+                this.tiles.material.needsUpdate = true
+            })
+            .name('Wireframe')
+
+        this.gui.add(this, 'hover').listen().name('Model name')
         if ((this.tiles.material as any).color) {
             const mat = this.tiles.material as any
-            this.gui.add(mat, 'vertexColors').onChange(() => {
-                if (mat.vertexColors) {
-                    color = mat.color.clone()
-                    mat.color = new THREE.Color(0xffffff)
-                } else {
-                    mat.color = color
-                }
-                mat.needsUpdate = true
-            })
+            const shader = this.gui.addFolder('Shader')
+            shader
+                .add(mat, 'vertexColors')
+                .onChange(() => {
+                    if (mat.vertexColors) {
+                        color = mat.color.clone()
+                        mat.color = new THREE.Color(0xffffff)
+                    } else {
+                        mat.color = color
+                    }
+                    mat.needsUpdate = true
+                })
+                .name('Color individual tiles')
 
-            this.gui
+            shader
                 .add(mat.userData.noiseScale, 'value')
                 .min(0.1)
                 .max(1.0)
                 .step(0.001)
-            this.gui
+                .name('Noise Intensity')
+            shader
                 .add(mat.userData.noiseFactor, 'value')
                 .min(0.0)
                 .max(2.0)
                 .step(0.01)
+                .name('Noise Scale')
+            shader
+                .add(mat.userData.noiseScale2, 'value')
+                .min(0.1)
+                .max(1.0)
+                .step(0.001)
+                .name('Displacement Intensity')
+            shader
+                .add(mat.userData.noiseFactor2, 'value')
+                .min(0.0)
+                .max(2.0)
+                .step(0.01)
+                .name('Displacement Scale')
             // random color
             const randomColor1 = new THREE.Color(0xffffff)
             randomColor1.setHSL(
@@ -453,17 +482,21 @@ export default class Basic extends BaseScene {
             )
             mat.userData.color1.value = randomColor1
             mat.userData.color2.value = randomColor2
-            this.gui.addColor(mat.userData.color1, 'value')
-            this.gui.addColor(mat.userData.color2, 'value')
+            shader.addColor(mat.userData.color1, 'value').name('Color 1')
+            shader.addColor(mat.userData.color2, 'value').name('Color 2')
         }
-        this.gui.add(this, 'disableEdit')
-        this.gui.add(this, 'swapControls')
-        this.gui.add(this, 'hover').listen() //.disable()
-        this.gui.add(this, 'generate')
-        this.gui.add(this.params, 'size', 1, 20).step(1)
-        this.gui.add(this.params, 'noiseScale', 0, 1).step(0.01)
-        this.gui.add(this.params.noiseScale3, 'x', 0, 1).step(0.01)
-        this.gui.add(this.params.noiseScale3, 'y', 0, 1).step(0.01)
-        this.gui.add(this.params.noiseScale3, 'z', 0, 1).step(0.01)
+
+        const generator = this.gui.addFolder('Generator')
+
+        generator.add(this.params, 'size', 1, 20).step(1).name('Size')
+        generator
+            .add(this.params, 'noiseScale', 0, 1)
+            .step(0.01)
+            .name('Noise Scale')
+        const noise = generator.addFolder('3D Noise')
+        noise.add(this.params.noiseScale3, 'x', 0, 1).step(0.01)
+        noise.add(this.params.noiseScale3, 'y', 0, 1).step(0.01)
+        noise.add(this.params.noiseScale3, 'z', 0, 1).step(0.01)
+        generator.add(this, 'generate').name('Generate')
     }
 }
