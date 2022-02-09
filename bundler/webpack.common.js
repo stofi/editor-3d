@@ -22,7 +22,7 @@ module.exports = {
         new MiniCSSExtractPlugin(),
     ],
     resolve: {
-        extensions: ['.ts', '.js', '.json']
+        extensions: ['.ts', '.js', '.json'],
     },
     module: {
         rules: [

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import myMaterial from '../shaders/experiment3'
-
+import { sha256 } from 'crypto-hash'
 import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
 const textureLoader = new THREE.TextureLoader()
@@ -33,17 +33,30 @@ export default class Tiles {
     lib = new Map()
     loaded = false
     material = myMaterial
+    hashes = new Map()
     load() {
         return new Promise((resolve, reject) => {
             this.loader.load(
                 './tiles2.gltf',
-                (gltf: GLTF) => {
-                    gltf.scene.children.forEach((child, index) => {
+                async (gltf: GLTF) => {
+                    gltf.scene.children.reduce(async (prev, child, index) => {
+                        await prev
                         if (child.type === 'Mesh') {
                             const mesh = child as THREE.Mesh
                             if (index < 10) {
-                                // log mesh.geometry attributes
-                                console.log(mesh.geometry.attributes)
+                                console.log(child)
+                            }
+                            const positionArray =
+                                mesh.geometry.attributes.position.array
+                            const hash = await sha256(
+                                Array.from(positionArray)
+                                    .map((x) => x.toString())
+                                    .join(',')
+                            )
+                            if (!this.hashes.has(hash)) {
+                                this.hashes.set(hash, mesh.geometry)
+                            } else {
+                                mesh.geometry = this.hashes.get(hash)
                             }
                             const saturation =
                                 Math.floor(
@@ -84,7 +97,9 @@ export default class Tiles {
 
                             this.lib.set(child.name, mesh)
                         }
-                    })
+                    }, Promise.resolve())
+                    console.log(this.hashes)
+
                     this.loaded = true
                     resolve(true)
                 },

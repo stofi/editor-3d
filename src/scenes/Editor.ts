@@ -38,7 +38,7 @@ export default class Basic extends BaseScene {
     tiles = new Tiles()
 
     queue: THREE.Vector3[] = []
-    queueStep = 100
+    queueStep = 1000
 
     onTick?: () => void
 
