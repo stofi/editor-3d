@@ -1,4 +1,5 @@
 import './style.css'
+import './input.css'
 
 import { Vector3 } from 'three'
 import SimplexNoise from 'simplex-noise'
@@ -8,6 +9,7 @@ import Basic from './scenes/Basic'
 import Editor from './scenes/Editor'
 
 const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement
+const loading = document.getElementById('loading') as HTMLDivElement
 const sceneData = localStorage.getItem('scene')
 
 const root = new Root(canvas)
@@ -27,6 +29,7 @@ const main = async () => {
 
     await editor.loadTiles()
     console.timeEnd('load')
+    loading.classList.add('hidden')
     editor.generate()
 }
 main()

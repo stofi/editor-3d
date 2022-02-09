@@ -141,6 +141,9 @@ export default class Basic extends BaseScene {
         }
     }
     onClick(event: MouseEvent): void {
+        const targetNotCanvas = (event?.target as any) !== this.canvas
+        if (targetNotCanvas) return
+
         if (this.disableEdit) return
         if (!this.swapControls) {
             this.handleAdd()

@@ -24,6 +24,7 @@ export default class extends BaseScene {
     constructor(canvas: HTMLCanvasElement) {
         super()
         this.gui = new dat.GUI()
+        this.gui.close()
         this.canvas = canvas
         this.scene = new THREE.Scene()
 

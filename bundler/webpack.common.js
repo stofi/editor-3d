@@ -47,9 +47,18 @@ module.exports = {
             },
 
             // CSS
+            // {
+            //     test: /\.css$/,
+            //     use: [MiniCSSExtractPlugin.loader, 'css-loader'],
+            // },
             {
-                test: /\.css$/,
-                use: [MiniCSSExtractPlugin.loader, 'css-loader'],
+                test: /\.css$/i,
+                use: [
+                    'style-loader',
+                    'css-loader',
+                    'postcss-loader',
+                    
+                ],
             },
 
             // Images
