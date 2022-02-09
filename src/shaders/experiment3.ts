@@ -4,7 +4,7 @@ THREE.MeshToonMaterial
 const myMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xff22ff,
     metalness: 0,
-    roughness: 1.0,
+    roughness: 0.2,
     reflectivity: 0.5,
     // vertexColors: true,
     transparent: true,
