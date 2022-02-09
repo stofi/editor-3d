@@ -84,22 +84,38 @@ export default class Test extends Scene {
                 }
                 mat.needsUpdate = true
             })
-            this.gui.addColor(mat, 'color').onChange(() => {
-                // mat.vertexColors = false
-                mat.needsUpdate = true
-            })
-        } else {
-            const mat = this.tiles.material as any
+            // this.gui.addColor(mat, 'color').onChange(() => {
+            //     // mat.vertexColors = false
+            //     mat.needsUpdate = true
+            // })
+
             this.gui
-                .add(mat.uniforms.noiseScale, 'value')
-                .min(0.001)
-                .max(10.0)
+                .add(mat.userData.noiseScale, 'value')
+                .min(0.1)
+                .max(1.0)
                 .step(0.001)
             this.gui
-                .add(mat.uniforms.noiseFactor, 'value')
+                .add(mat.userData.noiseFactor, 'value')
                 .min(0.0)
                 .max(2.0)
                 .step(0.01)
+            // random color
+            const randomColor1 = new THREE.Color(0xffffff)
+            randomColor1.setHSL(
+                Math.random(),
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5
+            )
+            const randomColor2 = new THREE.Color(0xffffff)
+            randomColor2.setHSL(
+                Math.random(),
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5
+            )
+            mat.userData.color1.value = randomColor1
+            mat.userData.color2.value = randomColor2
+            this.gui.addColor(mat.userData.color1, 'value')
+            this.gui.addColor(mat.userData.color2, 'value')
             // .onChange(() => {
             //     this.tiles.material.needsUpdate = true
             // })
@@ -108,7 +124,6 @@ export default class Test extends Scene {
         this.gui.add(this, 'swapControls')
         this.hover = ''
         this.gui.add(this, 'hover').listen() //.disable()
-        this.gui.add(this, 'updateDual')
     }
     async loadTiles() {
         return this.tiles.load()
