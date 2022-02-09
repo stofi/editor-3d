@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import myMaterial from './shaders/experiment3'
+import myMaterial from '../shaders/experiment3'
 
 import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
@@ -95,24 +95,5 @@ export default class Tiles {
                 }
             )
         })
-    }
-    onLoad(gltf: GLTF) {
-        gltf.scene.children.forEach((child, index) => {
-            if (child.type === 'Mesh') {
-                const mesh = child as THREE.Mesh
-                mesh.material = this.material
-                // const geometry = (child as THREE.Mesh).geometry
-                // const rotation = (child as THREE.Mesh).rotation
-                // const scale = (child as THREE.Mesh).scale
-                // // create a new mesh with the new material
-                // const mesh = new THREE.Mesh(geometry, this.material)
-                // mesh.rotation.set(rotation.x, rotation.y, rotation.z)
-                // mesh.scale.set(scale.x / 2, scale.y / 2, scale.z / 2)
-                mesh.scale.set(0.25, 0.25, 0.25)
-
-                this.lib.set(child.name, mesh)
-            }
-        })
-        this.loaded = true
     }
 }

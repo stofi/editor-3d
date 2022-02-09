@@ -115,16 +115,6 @@ export default class Dual {
         return this.positionToIndex(pos)
     }
     secondaryToMain(position: Vector3): optionalNumber[] {
-        // return [
-        //     this.nxny(position),
-        //     this.nxnynz(position),
-        //     this.nynz(position),
-        //     this.ny(position),
-        //     this.nx(position),
-        //     this.nxnz(position),
-        //     this.nz(position),
-        //     this.positionToIndex(position),
-        // ]
         return [
             this.nxnz(position),
             this.nx(position),
@@ -157,7 +147,7 @@ export default class Dual {
                         const value = this.main[mainIndex]?.value ?? 0
                         const valueInt = value > 0.5 ? 1 : 0
 
-                        cell.value |= value << vertexIndex
+                        cell.value |= valueInt << vertexIndex
                     }
                 }
             )
