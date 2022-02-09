@@ -91,11 +91,15 @@ export default class Test extends Scene {
         } else {
             const mat = this.tiles.material as any
             this.gui
-                .add(mat.noiseScale, 'value')
+                .add(mat.uniforms.noiseScale, 'value')
                 .min(0.001)
                 .max(10.0)
                 .step(0.001)
-            this.gui.add(mat.noiseFactor, 'value').min(0.0).max(2.0).step(0.01)
+            this.gui
+                .add(mat.uniforms.noiseFactor, 'value')
+                .min(0.0)
+                .max(2.0)
+                .step(0.01)
             // .onChange(() => {
             //     this.tiles.material.needsUpdate = true
             // })

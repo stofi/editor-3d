@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import myMaterial from './shaders/experiment3'
 
-import grass from './shaders/grass'
-import shadows from './shaders/shadows'
+import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
 const textureLoader = new THREE.TextureLoader()
 
@@ -28,33 +28,11 @@ window.addEventListener('resize', () => {
 })
 setUniforms(uniforms, window.innerWidth, window.innerHeight)
 
-const material = new THREE.ShaderMaterial({
-    vertexShader: grass.vertexShader,
-    fragmentShader: grass.fragmentShader,
-    uniforms: THREE.UniformsUtils.merge([
-        THREE.UniformsLib.lights,
-        THREE.UniformsLib.fog,
-        uniforms,
-    ]),
-    vertexColors: true,
-    fog: true,
-    lights: true,
-    dithering: true,
-})
-material.precision = 'highp'
-
-const testmat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-    fog: true,
-    dithering: true,
-})
-
 export default class Tiles {
     loader = new GLTFLoader()
     lib = new Map()
     loaded = false
-    material = testmat
+    material = myMaterial
     load() {
         return new Promise((resolve, reject) => {
             this.loader.load(
@@ -63,6 +41,10 @@ export default class Tiles {
                     gltf.scene.children.forEach((child, index) => {
                         if (child.type === 'Mesh') {
                             const mesh = child as THREE.Mesh
+                            if (index < 10) {
+                                // log mesh.geometry attributes
+                                console.log(mesh.geometry.attributes)
+                            }
                             const saturation =
                                 Math.floor(
                                     (index / gltf.scene.children.length) * 1000
@@ -93,7 +75,6 @@ export default class Tiles {
                             )
                             mesh.geometry.computeVertexNormals()
                             mesh.material = this.material
-                            // mesh.material = testmat
                             mesh.scale.multiplyScalar(-0.25)
                             mesh.scale.y *= -1
                             mesh.position.set(0, 0, 0)

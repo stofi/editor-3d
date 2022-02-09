@@ -24,7 +24,8 @@ const customFragmentChunk = `
     float b = snoise((wPScaled) + bOffset);
     // diffuseColor.rgb = vec3(r, 0.0, 0.0);
     vec3 noise3D = vec3(r,g,b) * 0.1;
-    diffuseColor.rgb = mod(vWorldPosition+noise3D, 1.0);
+    float y = mod(vWorldPosition+noise3D, 1.0).y;
+    diffuseColor.rgb = vec3(y, y, y);
 #endif
 ${colorHook}
 `
