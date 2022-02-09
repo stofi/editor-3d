@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import Stats from 'three/examples/jsm/libs/stats.module'
 import * as dat from 'lil-gui'
 
 import BaseScene from '../lib/BaseScene'
@@ -20,6 +21,7 @@ export default class extends BaseScene {
 
     ambientLight?: THREE.AmbientLight
     directLight?: THREE.DirectionalLight
+    stats: Stats
 
     constructor(canvas: HTMLCanvasElement) {
         super()
@@ -41,6 +43,8 @@ export default class extends BaseScene {
 
         this.onResize()
         this.addListeners()
+        this.stats = Stats()
+        document.body.appendChild(this.stats.dom)
     }
     // Super overrides:
     tick() {
@@ -53,7 +57,7 @@ export default class extends BaseScene {
 
         this.elapsedTime = this.clock.getElapsedTime()
         this.renderer.render(this.scene, this.camera)
-
+        this.stats.update()
         super.tick()
 
         window.requestAnimationFrame(this.tick.bind(this))
