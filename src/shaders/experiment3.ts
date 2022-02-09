@@ -105,6 +105,8 @@ myMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.uHeight = myMaterial.userData.uHeight
     shader.uniforms.noiseScale = myMaterial.userData.noiseScale
     shader.uniforms.noiseFactor = myMaterial.userData.noiseFactor
+    shader.uniforms.noiseScale2 = myMaterial.userData.noiseScale2
+    shader.uniforms.noiseFactor2 = myMaterial.userData.noiseFactor2
     shader.uniforms.color1 = myMaterial.userData.color1
     shader.uniforms.color2 = myMaterial.userData.color2
 
