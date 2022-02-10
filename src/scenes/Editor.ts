@@ -65,7 +65,7 @@ export default class Basic extends BaseScene {
                 this.params.size
             )
         )
-        this.scene.scale.y = 0.5
+        this.scene.scale.y = 1
     }
     // Super overrides:
     tick(): void {
@@ -461,7 +461,7 @@ export default class Basic extends BaseScene {
             shader
                 .add(mat.userData.noiseScale2, 'value')
                 .min(0.1)
-                .max(1.0)
+                .max(20.0)
                 .step(0.001)
                 .name('Displacement Intensity')
             shader
@@ -470,6 +470,30 @@ export default class Basic extends BaseScene {
                 .max(2.0)
                 .step(0.01)
                 .name('Displacement Scale')
+            shader
+                .add(mat.userData.fromMin, 'value')
+                .min(0.0)
+                .max(1.0)
+                .step(0.01)
+                .name('fromMin')
+            shader
+                .add(mat.userData.fromMax, 'value')
+                .min(0.0)
+                .max(1.0)
+                .step(0.01)
+                .name('fromMax')
+            shader
+                .add(mat.userData.toMin, 'value')
+                .min(0.0)
+                .max(1.0)
+                .step(0.01)
+                .name('toMin')
+            shader
+                .add(mat.userData.toMax, 'value')
+                .min(0.0)
+                .max(1.0)
+                .step(0.01)
+                .name('toMax')
             // random color
             const randomColor1 = new THREE.Color('#d3d7cf')
             const randomColor2 = new THREE.Color('#28a7e8')

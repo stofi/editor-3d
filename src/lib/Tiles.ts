@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import myMaterial from '../shaders/experiment3'
 import { sha256 } from 'crypto-hash'
@@ -43,19 +43,18 @@ window.addEventListener('resize', () => {
 setUniforms(uniforms, window.innerWidth, window.innerHeight)
 
 export default class Tiles {
-    draco = new DRACOLoader()
+    // draco = new DRACOLoader()
     loader = new GLTFLoader()
     lib = new Map()
     loaded = false
     material = myMaterial
     hashes = new Map()
     constructor() {
-        this.draco.setDecoderPath(
-            'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/libs/draco/'
-        )
-        this.draco.setDecoderConfig({ type: 'js' })
-
-        this.loader.setDRACOLoader(this.draco)
+        // this.draco.setDecoderPath(
+        //     'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/libs/draco/'
+        // )
+        // this.draco.setDecoderConfig({ type: 'js' })
+        // this.loader.setDRACOLoader(this.draco)
     }
     async load() {
         return new Promise((resolve, reject) => {
@@ -67,6 +66,31 @@ export default class Tiles {
                             await prev
                             if (child.type !== 'Mesh') return
                             const mesh = child as THREE.Mesh
+
+                            if (index < 10) {
+                                // console.log(mesh)
+                            }
+
+                            const color = new THREE.Color(0x000000)
+
+                            if (
+                                mesh.geometry.attributes['_vg_color_1'] === null
+                            ) {
+                                delete mesh.geometry.attributes['_vg_color_1']
+                            }
+                            if (
+                                mesh.geometry.attributes['_vg_color_2'] === null
+                            ) {
+                                delete mesh.geometry.attributes['_vg_color_2']
+                            }
+                            if (
+                                mesh.geometry.attributes['_vg_color_3'] === null
+                            ) {
+                                delete mesh.geometry.attributes['_vg_color_3']
+                            }
+                            const colors = new Float32Array(
+                                mesh.geometry.attributes.position.count * 3
+                            )
 
                             const positionArray =
                                 mesh.geometry.attributes.position.array
@@ -87,28 +111,29 @@ export default class Tiles {
                                 Math.floor(
                                     (index / gltf.scene.children.length) * 1000
                                 ) % 100
-
-                            const colors = new Float32Array(
-                                mesh.geometry.attributes.position.count * 3
-                            )
-                            const color = new THREE.Color(
-                                `hsl(${
-                                    (index * 360) / gltf.scene.children.length
-                                }, ${saturation}%, 50%)`
-                            )
-
-                            for (
-                                let i = 0;
-                                i < mesh.geometry.attributes.position.count;
-                                i++
-                            ) {
-                                const i3 = i * 3
-                                colors[i3] = color.r
-                                colors[i3 + 1] = color.g
-                                colors[i3 + 2] = color.b
-                            }
+                            const groups = [
+                                '_vg_color_1',
+                                '_vg_color_2',
+                                '_vg_color_3',
+                            ]
+                            groups.forEach((group, index) => {
+                                if (mesh.geometry.attributes[group]) {
+                                    for (
+                                        let i = 0;
+                                        i <
+                                        mesh.geometry.attributes[group].count;
+                                        i++
+                                    ) {
+                                        const value =
+                                            mesh.geometry.attributes[group]
+                                                .array[i] * 65535
+                                        const i3 = i * 3
+                                        colors[i3 + index] = value
+                                    }
+                                }
+                            })
                             mesh.geometry.setAttribute(
-                                'color',
+                                'color2',
                                 new THREE.BufferAttribute(colors, 3)
                             )
                             // mesh.geometry.computeVertexNormals()
