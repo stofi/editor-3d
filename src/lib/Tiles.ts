@@ -7,6 +7,19 @@ import { sha256 } from 'crypto-hash'
 import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
 const textureLoader = new THREE.TextureLoader()
+const cubeTextureLoader = new THREE.CubeTextureLoader()
+
+const environmentMapTexture = cubeTextureLoader.load([
+    '/textures/env/px.png',
+    '/textures/env/nx.png',
+    '/textures/env/py.png',
+    '/textures/env/ny.png',
+    '/textures/env/pz.png',
+    '/textures/env/nz.png',
+])
+
+myMaterial.envMap = environmentMapTexture
+myMaterial.envMapIntensity = 1
 
 const uniforms = {
     uWidth: { value: 0 },

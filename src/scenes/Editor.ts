@@ -65,6 +65,7 @@ export default class Basic extends BaseScene {
                 this.params.size
             )
         )
+        this.scene.scale.y = 0.5
     }
     // Super overrides:
     tick(): void {
@@ -455,6 +456,8 @@ export default class Basic extends BaseScene {
                 .max(2.0)
                 .step(0.01)
                 .name('Noise Scale')
+            shader.add(mat, 'roughness', 0, 1).name('Roughness')
+            shader.add(mat, 'metalness', 0, 1).step(1).name('Metallic')
             shader
                 .add(mat.userData.noiseScale2, 'value')
                 .min(0.1)
@@ -468,22 +471,17 @@ export default class Basic extends BaseScene {
                 .step(0.01)
                 .name('Displacement Scale')
             // random color
-            const randomColor1 = new THREE.Color(0xffffff)
-            randomColor1.setHSL(
-                Math.random(),
-                Math.random() * 0.5 + 0.5,
-                Math.random() * 0.5 + 0.5
-            )
-            const randomColor2 = new THREE.Color(0xffffff)
-            randomColor2.setHSL(
-                Math.random(),
-                Math.random() * 0.5 + 0.5,
-                Math.random() * 0.5 + 0.5
-            )
+            const randomColor1 = new THREE.Color('#d3d7cf')
+            const randomColor2 = new THREE.Color('#28a7e8')
+
             mat.userData.color1.value = randomColor1
             mat.userData.color2.value = randomColor2
             shader.addColor(mat.userData.color1, 'value').name('Color 1')
             shader.addColor(mat.userData.color2, 'value').name('Color 2')
+            this.parent &&
+                shader
+                    .addColor(this.parent.scene, 'background')
+                    .name('Background')
         }
 
         const generator = this.gui.addFolder('Generator')

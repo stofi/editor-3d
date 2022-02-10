@@ -41,7 +41,7 @@ export default class extends BaseScene {
         })
         this.renderer.shadowMap.enabled = true
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-
+        this.scene.background = new THREE.Color('#20a4b9')
         this.onResize()
         this.addListeners()
         this.stats = Stats()
@@ -75,7 +75,7 @@ export default class extends BaseScene {
 
         this.addListeners()
         this.addCamera()
-        this.addAmbientLight()
+        // this.addAmbientLight()
         this.addDirectLight()
         super.start()
         this.tick()
