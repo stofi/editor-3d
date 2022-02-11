@@ -118,11 +118,11 @@ export default class extends BaseScene {
     }
     addDirectLight() {
         this.directLight = new THREE.DirectionalLight(0xffffff, 1)
-        this.directLight.castShadow = true
-        this.directLight.shadow.mapSize.width = 2048
-        this.directLight.shadow.mapSize.height = 2048
+        this.directLight.castShadow = false
+        this.directLight.shadow.mapSize.width = 512
+        this.directLight.shadow.mapSize.height = 512
         this.directLight.shadow.camera.near = 0.5
-        this.directLight.shadow.camera.far = 30
+        this.directLight.shadow.camera.far = 40
         this.directLight.shadow.camera.left = -15
         this.directLight.shadow.camera.right = 15
         this.directLight.shadow.camera.top = 15
@@ -142,6 +142,8 @@ export default class extends BaseScene {
         this.camera.position.y = 30
         this.camera.position.z = 30
         this.controls = new OrbitControls(this.camera, this.canvas)
+        this.controls.enablePan = false
+        this.controls.dampingFactor = 0.1
         this.scene.add(this.camera)
     }
 }

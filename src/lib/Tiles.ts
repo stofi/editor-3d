@@ -137,6 +137,7 @@ export default class Tiles {
                                 new THREE.BufferAttribute(colors, 3)
                             )
                             // mesh.geometry.computeVertexNormals()
+
                             mesh.material = this.material
                             mesh.scale.multiplyScalar(-0.25)
                             mesh.scale.y *= -1
@@ -145,7 +146,34 @@ export default class Tiles {
                             mesh.receiveShadow = true
                             // mesh.rotation.y += Math.PI
 
-                            this.lib.set(child.name, mesh)
+                            // Particles
+                            // const particlesGeometry = new THREE.BufferGeometry()
+                            // particlesGeometry.setAttribute(
+                            //     'position',
+                            //     new THREE.BufferAttribute(
+                            //         mesh.geometry.attributes.position.array,
+                            //         3
+                            //     )
+                            // )
+                            // const particles = new THREE.Points(
+                            //     particlesGeometry,
+                            //     new THREE.PointsMaterial({
+                            //         size: 0.1,
+                            //         // sizeAttenuation: true,
+                            //         // depthWrite: true,
+                            //         // vertexColors: true,
+                            //     })
+                            // )
+
+                            // particles.scale.copy(mesh.scale)
+                            // particles.rotation.copy(mesh.rotation)
+                            // particles.position.set(0, 0, 0)
+
+                            const group = new THREE.Group()
+                            group.add(mesh)
+                            // group.add(particles)
+
+                            this.lib.set(child.name, group)
                         },
                         Promise.resolve()
                     )

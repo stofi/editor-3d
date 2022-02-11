@@ -72,6 +72,11 @@ export default class Basic extends BaseScene {
             )
         )
         this.scene.scale.y = 1
+        this.scene.position.set(
+            -this.params.size / 2,
+            -this.params.size / 2,
+            -this.params.size / 2
+        )
     }
     // Super overrides:
     tick(): void {
@@ -168,10 +173,14 @@ export default class Basic extends BaseScene {
             this.handleAdd()
         }
     }
-    handleHoverThrottled = _.throttle(() => {
-        const intersects = this.getHover()
-        this.hover = intersects.length > 0 ? intersects[0].object.name : ''
-    }, 300)
+    handleHoverThrottled = _.throttle(
+        () => {
+            const intersects = this.getHover()
+            this.hover = intersects.length > 0 ? intersects[0].object.name : ''
+        },
+        300,
+        { leading: true, trailing: true }
+    )
     // Methods
     handleAdd() {
         const intersects = this.getIntersects()
@@ -221,7 +230,7 @@ export default class Basic extends BaseScene {
                 .clone()
                 .add(cubes[0].face.normal)
             this.hoverCube.position.copy(pos)
-            this.hoverCube.visible = true
+            !this.disableEdit && (this.hoverCube.visible = true)
         } else if (this.hoverCube) {
             this.hoverCube.visible = false
         }
@@ -252,6 +261,11 @@ export default class Basic extends BaseScene {
                 this.params.size,
                 this.params.size
             )
+        )
+        this.scene.position.set(
+            -this.params.size / 2,
+            -this.params.size / 2,
+            -this.params.size / 2
         )
 
         const simplex = new SimplexNoise()
@@ -320,6 +334,7 @@ export default class Basic extends BaseScene {
         // if (this.initialized) return
         const { main, secondary, camera, size } = JSON.parse(data)
         this.dual.resize(new THREE.Vector3(size, size, size))
+        this.scene.position.set(-size / 2, -size / 2, -size / 2)
         const mapData =
             (main = true) =>
             (value: number, index: number) => {
@@ -387,7 +402,7 @@ export default class Basic extends BaseScene {
 
     // Objects
     addCube(position = new THREE.Vector3(0, 0, 0), skipDual = false) {
-        this.hoverCube && (this.hoverCube.visible = false)
+        !this.disableEdit && this.hoverCube && (this.hoverCube.visible = false)
         // debugger
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
@@ -424,7 +439,7 @@ export default class Basic extends BaseScene {
         this.scene.add(this.hoverCube)
     }
     removeCube(position: THREE.Vector3): void {
-        this.hoverCube && (this.hoverCube.visible = false)
+        !this.disableEdit && this.hoverCube && (this.hoverCube.visible = false)
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
         const index = this.cubes.findIndex((cube) => {
@@ -537,13 +552,15 @@ export default class Basic extends BaseScene {
             mat.userData.color2.value = randomColor2
             shader.addColor(mat.userData.color1, 'value').name('Color 1')
             shader.addColor(mat.userData.color2, 'value').name('Color 2')
+            shader.close()
+            shader.hide()
             this.parent &&
                 shader
                     .addColor(this.parent.scene, 'background')
                     .name('Background')
         }
-
         const generator = this.gui.addFolder('Generator')
+        generator.close()
 
         generator.add(this.params, 'size', 1, 20).step(1).name('Size')
         generator
