@@ -25,8 +25,17 @@ const customFragmentChunk = `
     // diffuseColor.rgb = vec3(r, 0.0, 0.0);
     vec3 noise3D = vec3(r,g,b) * noiseScale;
     float y = mod(vWorldPosition+noise3D, 1.0).y;
+
     diffuseColor.rgb = mix(color1, color2, y);
-    diffuseColor.rgb = myValue;
+
+    if(floorMask > 0.0){
+        diffuseColor.rgb = mix( diffuseColor.rgb,color1, floorMask);
+    } else if(ceilMask > 0.0){
+        diffuseColor.rgb = mix( diffuseColor.rgb,color2, ceilMask);
+      
+    }
+    // diffuseColor.rgb = mix(color1, color2, y);
+    // diffuseColor.rgb = vec3(floorMask, wallMask, ceilMask);
 #endif
 ${colorHook}
 `
@@ -48,30 +57,44 @@ const customVertexChunk = `
         mvp = instanceMatrix * mvp;
     #endif
     mvp = modelMatrix * mvp;
-    glp = projectionMatrix * mvp;
+    // glp = projectionMatrix * mvp;
 
-    vec3 pScaled = glp.xyz * pow(noiseFactor2, 0.6);
+    vec3 colorX = color3.rgb / (65535.0 / 4.0);
+    isFloor = colorX.x > 0.5 ? 1.0 : 0.0;
+    isCeil = colorX.y > 0.5 ? 1.0 : 0.0;
+    isWall = colorX.z > 0.5 ? 1.0 : 0.0;
 
-    float g = (snoise(pScaled.xyz + vec3(0.0, 100.0, 0.0)));
-    vec3 noise3D = vec3(0,g,0) * -0.6;
+    floorMask = 0.0;
+    if (isFloor > 0.5 && isWall > 0.5) {
+        floorMask = 0.5;
+    } else if (isFloor > 0.5) {
+        floorMask = 1.0;
+    } else if (isWall > 0.5) {
+        floorMask = 0.0;
+    }
+
+    wallMask = 0.0;
+    if (isFloor > 0.5 && isWall > 0.5) {
+        wallMask = 0.5;
+    } else if (isFloor > 0.5) {
+        wallMask = 0.0;
+    } else if (isCeil > 0.5) {
+        wallMask = 0.0;
+    } else if (isWall > 0.5) {
+        wallMask = 1.0;
+    }
     
-    float horizontal = 1.0 - (dot(normal, vec3(0.0, 1.0, 0.0))) ;
-    
-    float sigmoid = plot(horizontal,pow(horizontal,1.5));
-    float y = mod(mvp.xyz + vec3(0.0,0.5,0.0),1.0).y;
-    // t is y mapped from fromMin, fromMax to toMin, toMax
-    // float fromMin = 0.45;
-    // float fromMax = 0.33;
-    // float toMin = 0.0;
-    // float toMax = 0.9;
-    float t = (y - fromMin) / (fromMax - fromMin);
-    // t is now mapped from 0,1 to toMin, toMax
-    t = t * (toMax - toMin) + toMin;
-    // t is now mapped from toMin, toMax to 0,1
+    ceilMask = 0.0;
+    if (isCeil > 0.5 && isWall > 0.5) {
+        ceilMask = 0.5;
+    } else if (isCeil > 0.5) {
+        ceilMask = 1.0;
+    } else if (isWall > 0.5) {
+        ceilMask = 0.0;
+    }
 
-    t = t * sigmoid * noiseScale2 * 0.1;
-    vec3 displacement = (noise3D) * t;
-    myValue = color2;
+
+    myValue = vec3(floorMask, floorMask, floorMask);
 
     // transformed += displacement;
 #endif
@@ -152,6 +175,12 @@ myMaterial.onBeforeCompile = (shader) => {
 
     shader.fragmentShader = `
     in vec3 myValue;
+    in float isFloor;
+    in float isWall;
+    in float isCeil;
+    in float floorMask;
+    in float wallMask;
+    in float ceilMask;
     uniform float uWidth;
     uniform float uHeight;
     uniform float noiseScale;
@@ -166,8 +195,14 @@ myMaterial.onBeforeCompile = (shader) => {
     ${shader.fragmentShader}
     `
     shader.vertexShader = `
-    attribute vec3 color2;
+    attribute vec3 color3;
     out vec3 myValue;
+    out float isFloor;
+    out float isWall;
+    out float isCeil;
+    out float floorMask;
+    out float wallMask;
+    out float ceilMask;
     uniform float uWidth;
     uniform float uHeight;
     uniform float noiseScale2;
@@ -177,6 +212,7 @@ myMaterial.onBeforeCompile = (shader) => {
     uniform float toMin;
     uniform float toMax;
     uniform vec3 color1;
+    uniform vec3 color2;
     
     ${shader.vertexShader}
     `

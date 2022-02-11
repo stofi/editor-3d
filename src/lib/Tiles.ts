@@ -67,8 +67,8 @@ export default class Tiles {
                             if (child.type !== 'Mesh') return
                             const mesh = child as THREE.Mesh
 
-                            if (index < 10) {
-                                // console.log(mesh)
+                            if (index < 1) {
+                                console.log(mesh)
                             }
 
                             const color = new THREE.Color(0x000000)
@@ -133,7 +133,7 @@ export default class Tiles {
                                 }
                             })
                             mesh.geometry.setAttribute(
-                                'color2',
+                                'color3',
                                 new THREE.BufferAttribute(colors, 3)
                             )
                             // mesh.geometry.computeVertexNormals()

@@ -479,19 +479,19 @@ export default class Basic extends BaseScene {
             shader
                 .add(mat.userData.fromMax, 'value')
                 .min(0.0)
-                .max(1.0)
+                .max(100000.0)
                 .step(0.01)
                 .name('fromMax')
             shader
                 .add(mat.userData.toMin, 'value')
                 .min(0.0)
-                .max(1.0)
+                .max(10.0)
                 .step(0.01)
                 .name('toMin')
             shader
                 .add(mat.userData.toMax, 'value')
                 .min(0.0)
-                .max(1.0)
+                .max(10.0)
                 .step(0.01)
                 .name('toMax')
             // random color
