@@ -39,6 +39,7 @@ export default class Basic extends BaseScene {
     mouse: THREE.Vector2 = new THREE.Vector2()
     lastTouch = -Infinity
     hover = ''
+    line = new THREE.Line()
 
     dual: Dual
     tiles = new Tiles()
@@ -253,6 +254,9 @@ export default class Basic extends BaseScene {
         this.updateDual()
     }
     generate() {
+        if (this.line) {
+            this.line.geometry.dispose()
+        }
         this.dual.resize(
             new THREE.Vector3(
                 this.params.size,
@@ -274,22 +278,50 @@ export default class Basic extends BaseScene {
         const points = []
         const count = 10
         for (let i = 0; i < count; i++) {
-            const x = Math.floor(
-                (simplex.noise2D(i, Math.random()) * 0.5 + 0.5) *
-                    this.params.size
+            const point = new THREE.Vector3(0, 0, 0)
+            do {
+                const x = Math.floor(
+                    (simplex.noise2D(i, Math.random()) * 0.5 + 0.5) *
+                        this.params.size
+                )
+                const y = Math.floor(i * (this.params.size / count))
+                const z = Math.floor(
+                    (simplex.noise2D(i + Math.random(), Math.random()) * 0.5 +
+                        0.5) *
+                        this.params.size
+                )
+                point.set(x, y, z)
+                // while point is above previous point
+            } while (
+                points.length > 0 &&
+                point.distanceTo(points[points.length - 1]) <
+                    this.params.size / 2
             )
-            const y = Math.floor(i * (this.params.size / count))
-            const z = Math.floor(
-                (simplex.noise2D(i + Math.random(), Math.random()) * 0.5 +
-                    0.5) *
-                    this.params.size
-            )
-            points.push(new THREE.Vector3(x, y, z))
+            points.push(point)
+
+            // while point is above previous point move it
+            points.push(point)
         }
         const bc = new Curve({
             points,
         })
         const curve = bc.getWholePoints()
+        // add curve points to line
+        this.line.geometry = new THREE.BufferGeometry()
+        // curve to points
+        const pointsArray = curve
+            .map((point) => [point.x, point.y + 1, point.z])
+            .flat()
+        this.line.geometry.setAttribute(
+            'position',
+            new THREE.Float32BufferAttribute(pointsArray, 3)
+        )
+        this.line.material = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            linewidth: 2,
+        })
+
+        this.scene.add(this.line)
 
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
@@ -309,7 +341,7 @@ export default class Basic extends BaseScene {
                 y * scale * this.params.noiseScale3.y,
                 z * scale * this.params.noiseScale3.z
             )
-            const compareScale = new THREE.Vector3(0.5, 1, 0.6)
+            const compareScale = new THREE.Vector3(0.75, 1, 0.75)
             const isNearCurve = curve.some(
                 (point) =>
                     point
@@ -319,17 +351,16 @@ export default class Basic extends BaseScene {
                             cell.position.clone().multiply(compareScale)
                         ) < 1
             )
-            compareScale.copy(new THREE.Vector3(0.2, 0.3, 0.2))
-            const isAboveCurve = curve.some(
-                (point) =>
-                    point
-                        .clone()
-                        .add(new THREE.Vector3(0, -1, 0))
-                        .multiply(compareScale)
-                        .distanceTo(
-                            cell.position.clone().multiply(compareScale)
-                        ) < 0.3
-            )
+            compareScale.set(0.5, 1, 0.5)
+            const isAboveCurve = curve.some((point) => {
+                const l = point
+                    .clone()
+                    .add(new THREE.Vector3(0, -1, 0))
+                    .multiply(compareScale)
+                    .sub(cell.position.clone().multiply(compareScale))
+                    .length()
+                return l < 2 && l > -1
+            })
 
             if (isNearCurve) {
                 cell.value = 1
