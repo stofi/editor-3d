@@ -18,14 +18,20 @@ export default class Basic extends BaseScene {
     camera: THREE.Camera
     cubes: THREE.Mesh[] = []
     duals: THREE.Mesh[] = []
+    hoverCube?: THREE.Mesh
     showHitBoxes = false
-    disableEdit = false
+    disableEdit = true
     swapControls = false
 
     cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1)
     cubeMaterial = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
         wireframe: true,
+    })
+    hoverCubeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.2,
     })
 
     cubeRaycast = new THREE.Raycaster()
@@ -86,6 +92,7 @@ export default class Basic extends BaseScene {
     async start() {
         this.addListeners()
         await this.loadTiles()
+        this.addHoverCube()
         this.addGui()
         super.start()
     }
@@ -202,7 +209,24 @@ export default class Basic extends BaseScene {
     }
     getHover(): THREE.Intersection[] {
         this.dualRaycast.setFromCamera(this.mouse, this.camera)
-        return this.dualRaycast.intersectObjects(this.duals)
+        const result = this.dualRaycast.intersectObjects(this.duals)
+        const cubes = this.getIntersects()
+        if (
+            this.hoverCube &&
+            cubes.length > 0 &&
+            cubes[0].object.position &&
+            cubes[0].face
+        ) {
+            const pos = cubes[0].object.position
+                .clone()
+                .add(cubes[0].face.normal)
+            this.hoverCube.position.copy(pos)
+            this.hoverCube.visible = true
+        } else if (this.hoverCube) {
+            this.hoverCube.visible = false
+        }
+
+        return result
     }
     updateDual(): void {
         this.duals.forEach((dualCube, index) => {
@@ -363,6 +387,7 @@ export default class Basic extends BaseScene {
 
     // Objects
     addCube(position = new THREE.Vector3(0, 0, 0), skipDual = false) {
+        this.hoverCube && (this.hoverCube.visible = false)
         // debugger
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
@@ -389,7 +414,17 @@ export default class Basic extends BaseScene {
         this.duals.push(dualCube)
         this.scene.add(dualCube)
     }
+    addHoverCube() {
+        if (this.hoverCube) return
+        this.hoverCube = new THREE.Mesh(
+            this.cubeGeometry,
+            this.hoverCubeMaterial
+        )
+        this.hoverCube.visible = false
+        this.scene.add(this.hoverCube)
+    }
     removeCube(position: THREE.Vector3): void {
+        this.hoverCube && (this.hoverCube.visible = false)
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
         const index = this.cubes.findIndex((cube) => {
@@ -479,23 +514,23 @@ export default class Basic extends BaseScene {
             shader
                 .add(mat.userData.fromMax, 'value')
                 .min(0.0)
-                .max(100000.0)
+                .max(100.0)
                 .step(0.01)
                 .name('fromMax')
             shader
                 .add(mat.userData.toMin, 'value')
                 .min(0.0)
-                .max(10.0)
+                .max(100.0)
                 .step(0.01)
                 .name('toMin')
             shader
                 .add(mat.userData.toMax, 'value')
                 .min(0.0)
-                .max(10.0)
+                .max(100.0)
                 .step(0.01)
                 .name('toMax')
             // random color
-            const randomColor1 = new THREE.Color('#d3d7cf')
+            const randomColor1 = new THREE.Color('#babdb6')
             const randomColor2 = new THREE.Color('#28a7e8')
 
             mat.userData.color1.value = randomColor1

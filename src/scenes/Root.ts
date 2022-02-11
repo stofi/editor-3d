@@ -22,7 +22,7 @@ export default class extends BaseScene {
     ambientLight?: THREE.AmbientLight
     directLight?: THREE.DirectionalLight
     stats: Stats
-    pixRatio = Math.min(window.devicePixelRatio, 2)
+    pixRatio = 0.4
 
     constructor(canvas: HTMLCanvasElement) {
         super()
@@ -41,7 +41,7 @@ export default class extends BaseScene {
         })
         this.renderer.shadowMap.enabled = true
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-        this.scene.background = new THREE.Color('#20a4b9')
+        this.scene.background = new THREE.Color('#1b1d1e')
         this.onResize()
         this.addListeners()
         this.stats = Stats()

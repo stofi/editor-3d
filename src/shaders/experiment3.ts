@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import simplex from './simplex'
+import voronoi from './voronoi'
+import utils from './utils'
 THREE.MeshToonMaterial
 const myMaterial = new THREE.MeshPhysicalMaterial({
     color: 0xff22ff,
     metalness: 0,
-    roughness: 0.2,
-    reflectivity: 0.5,
+    roughness: 1.0,
     // vertexColors: true,
     transparent: true,
 })
@@ -18,9 +19,9 @@ const customFragmentChunk = `
 #ifdef USE_CUSTOM 
     vec3 gOffset = vec3(2469.0, 324.0, 666.0);
     vec3 bOffset = vec3(52.0, 7454.0, 456.0);
-    vec3 wPScaled = vWorldPosition.xyz * pow(noiseFactor, 0.6);
-    float r = snoise(wPScaled);
-    float g = snoise((wPScaled) + gOffset);
+    vec3 wPScaled = vWorldPosition.xyz;
+    float r = snoise(wPScaled * 20.0);
+    float g = snoise((wPScaled * 3.0) + gOffset);
     float b = snoise((wPScaled) + bOffset);
     // diffuseColor.rgb = vec3(r, 0.0, 0.0);
     vec3 noise3D = vec3(r,g,b) * noiseScale;
@@ -28,14 +29,47 @@ const customFragmentChunk = `
 
     diffuseColor.rgb = mix(color1, color2, y);
 
-    if(floorMask > 0.0){
-        diffuseColor.rgb = mix( diffuseColor.rgb,color1, floorMask);
-    } else if(ceilMask > 0.0){
-        diffuseColor.rgb = mix( diffuseColor.rgb,color2, ceilMask);
-      
+    diffuseColor.rgb = vec3(0.063,0.004,0.004);
+    r = (r + 1.0) / 4.0;
+    g = (g + 1.0) / 4.0;
+    b = (b + 1.0) / 4.0;
+
+    float dirtMask = LinearLight(r, isFloor);
+    float grassMask = LinearLight(r,LinearLight(g, floorMask));
+
+    vec3 grassColor = vec3(0.561,0.349,0.008);
+    vec3 dirtColor = vec3(0.13333333333333333, 0.00784313725490196, 0.00784313725490196);
+    grassColor = mix( dirtColor,grassColor,grassMask);
+
+    float vor = voronoi2(vec3(1.0), vec2((vWorldPosition.y ) * 0.8,(vWorldPosition.x + vWorldPosition.z) * 0.8), 80.0, 0.8, 0.0, vec3(0.0)).x;
+    
+
+    float vor2 = voronoi2(vec3(1.0), vWorldPosition.xz * 0.8 + vec2(333.12,1.2), 80.0, 0.8, 0.0, vec3(0.0)).x;
+    
+
+    float sideRocks = (LinearLight( wallMask, vor) * (wallMask - isFloor));
+    sideRocks = smoothstep(0.0, 1.0, sideRocks);
+
+    float bottomRocks = smoothstep(0.0, 1.0, LinearLight( isCeil, vor2) * isCeil);
+
+    float rocks = smoothstep(0.0,1.0,sideRocks + bottomRocks);
+    rocks = LinearLight(rocks, r);
+    // diffuseColor.rgb = vec3(rocks);
+
+    vec3 dustColor = vec3(0.286,0.137,0.137);
+
+    grassColor = mix( grassColor, dustColor, LinearLight(r, b*1.2));
+
+    if(dirtMask > 0.0){
+
+        diffuseColor.rgb = mix( diffuseColor.rgb,grassColor, dirtMask);
+    } else {
+        diffuseColor.rgb = mix( diffuseColor.rgb,vec3(0.122,0.012,0.012), rocks);
     }
-    // diffuseColor.rgb = mix(color1, color2, y);
-    // diffuseColor.rgb = vec3(floorMask, wallMask, ceilMask);
+
+
+    // diffuseColor.rgb = vec3(grassMask);
+    // diffuseColor.rgb = mix(vec3(floorMask, wallMask, ceilMask),vec3(isFloor, isWall, isCeil), fromMin);
 #endif
 ${colorHook}
 `
@@ -45,6 +79,8 @@ const vertFunctionHook = '#include <common>'
 
 const customFunctionChunk = `
 #ifdef USE_CUSTOM 
+    ${utils}
+    ${voronoi}
     ${simplex}
 #endif
 ${functionHook}
@@ -94,16 +130,22 @@ const customVertexChunk = `
     }
 
 
-    myValue = vec3(floorMask, floorMask, floorMask);
 
-    // transformed += displacement;
+
+
+    myNormal = normal;
+
+
+    myValue = vec3(floorMask, floorMask, floorMask);
 #endif
 ${vertHook}
 `
 
 const customVertexFunctionChunk = `
 #ifdef USE_CUSTOM 
+    ${utils}
     ${simplex}
+    ${voronoi}
     float plot(float st, float pct){
         return  smoothstep( pct-0.02, pct, st);
       }
@@ -175,6 +217,7 @@ myMaterial.onBeforeCompile = (shader) => {
 
     shader.fragmentShader = `
     in vec3 myValue;
+    in vec3 myNormal;
     in float isFloor;
     in float isWall;
     in float isCeil;
@@ -197,6 +240,7 @@ myMaterial.onBeforeCompile = (shader) => {
     shader.vertexShader = `
     attribute vec3 color3;
     out vec3 myValue;
+    out vec3 myNormal;
     out float isFloor;
     out float isWall;
     out float isCeil;
