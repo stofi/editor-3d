@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import _ from 'lodash'
 import SimplexNoise from 'simplex-noise'
-
+import { Curve } from '../lib/Bezier'
 import BaseScene from '../lib/BaseScene'
 
 import Dual from '../lib/Dual'
@@ -253,8 +253,6 @@ export default class Basic extends BaseScene {
         this.updateDual()
     }
     generate() {
-        const local = this.showHitBoxes
-        this.showHitBoxes = true
         this.dual.resize(
             new THREE.Vector3(
                 this.params.size,
@@ -271,6 +269,27 @@ export default class Basic extends BaseScene {
         const simplex = new SimplexNoise()
         let i = 0
         const batch = Math.min(this.params.size ** 2, 150)
+
+        // 6 random points within size of grid
+        const points = []
+        const count = 10
+        for (let i = 0; i < count; i++) {
+            const x = Math.floor(
+                (simplex.noise2D(i, Math.random()) * 0.5 + 0.5) *
+                    this.params.size
+            )
+            const y = Math.floor(i * (this.params.size / count))
+            const z = Math.floor(
+                (simplex.noise2D(i + Math.random(), Math.random()) * 0.5 +
+                    0.5) *
+                    this.params.size
+            )
+            points.push(new THREE.Vector3(x, y, z))
+        }
+        const bc = new Curve({
+            points,
+        })
+        const curve = bc.getWholePoints()
 
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
@@ -290,19 +309,41 @@ export default class Basic extends BaseScene {
                 y * scale * this.params.noiseScale3.y,
                 z * scale * this.params.noiseScale3.z
             )
-            cell.value = noise
+            const compareScale = new THREE.Vector3(0.5, 1, 0.6)
+            const isNearCurve = curve.some(
+                (point) =>
+                    point
+                        .clone()
+                        .multiply(compareScale)
+                        .distanceTo(
+                            cell.position.clone().multiply(compareScale)
+                        ) < 1
+            )
+            compareScale.copy(new THREE.Vector3(0.2, 0.3, 0.2))
+            const isAboveCurve = curve.some(
+                (point) =>
+                    point
+                        .clone()
+                        .add(new THREE.Vector3(0, -1, 0))
+                        .multiply(compareScale)
+                        .distanceTo(
+                            cell.position.clone().multiply(compareScale)
+                        ) < 0.3
+            )
+
+            if (isNearCurve) {
+                cell.value = 1
+            } else if (isAboveCurve) {
+                cell.value = 0
+            } else {
+                cell.value = noise
+                // cell.value = 0
+            }
         })
         this.onTick = () => {
             // loop end
             if (i >= this.dual.main.length) {
                 this.updateDual()
-                this.onTick = () => {
-                    this.cubes.forEach((cube) => {
-                        cube.visible = local
-                        this.showHitBoxes = local
-                    })
-                    this.onTick = () => null
-                }
                 return
             }
             for (let j = 0; j < batch && i + j < this.dual.main.length; j++) {
