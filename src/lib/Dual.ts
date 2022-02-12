@@ -3,6 +3,8 @@ import { Vector3 } from 'three'
 interface Cell {
     position: Vector3
     value: number
+    locked: boolean
+    metadata?: any
 }
 type optionalNumber = number | null
 
@@ -11,11 +13,13 @@ export default class Dual {
     secondarySize: Vector3
     main: Cell[] = []
     secondary: Cell[] = []
+    secondaryToMainMap: Map<Vector3, optionalNumber[]> = new Map()
     constructor(size: Vector3) {
         this.mainSize = size.ceil()
         this.secondarySize = this.mainSize.clone().addScalar(1)
         this.main = this.create(this.mainSize)
         this.secondary = this.create(this.secondarySize)
+        this.fillMap()
     }
     create(size: Vector3) {
         const array = new Array(size.x * size.y * size.z)
@@ -28,6 +32,7 @@ export default class Dual {
                 return {
                     position,
                     value: 0,
+                    locked: false,
                 }
             })
         return array
@@ -141,16 +146,16 @@ export default class Dual {
     calculateDual() {
         this.secondary.forEach((cell) => {
             cell.value = 0
-            this.secondaryToMain(cell.position).forEach(
-                (mainIndex, vertexIndex) => {
+            this.secondaryToMainMap
+                .get(cell.position)
+                ?.forEach((mainIndex, vertexIndex) => {
                     if (mainIndex !== null) {
                         const value = this.main[mainIndex]?.value ?? 0
                         const valueInt = value > 0.5 ? 1 : 0
 
                         cell.value |= valueInt << vertexIndex
                     }
-                }
-            )
+                })
         })
     }
     resize(size: Vector3) {
@@ -158,5 +163,13 @@ export default class Dual {
         this.secondarySize = this.mainSize.clone().addScalar(1)
         this.main = this.create(this.mainSize)
         this.secondary = this.create(this.secondarySize)
+        this.fillMap()
+    }
+    fillMap() {
+        this.secondaryToMainMap.clear()
+        this.secondary.forEach((cell) => {
+            const main = this.secondaryToMain(cell.position)
+            this.secondaryToMainMap.set(cell.position, main)
+        })
     }
 }

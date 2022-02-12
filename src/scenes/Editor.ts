@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import _ from 'lodash'
 import SimplexNoise from 'simplex-noise'
-import { Curve } from '../lib/Bezier'
 import BaseScene from '../lib/BaseScene'
 
 import Dual from '../lib/Dual'
@@ -82,7 +81,6 @@ export default class Basic extends BaseScene {
     // Super overrides:
     tick(): void {
         super.tick()
-
         if (this.queue.length) {
             for (let i = 0; i < this.queueStep && i < this.queue.length; i++) {
                 this.addCube(this.queue[i], true)
@@ -92,6 +90,7 @@ export default class Basic extends BaseScene {
                 this.updateDual()
             }
         }
+
         this.onTick && this.onTick()
     }
 
@@ -254,9 +253,6 @@ export default class Basic extends BaseScene {
         this.updateDual()
     }
     generate() {
-        if (this.line) {
-            this.line.geometry.dispose()
-        }
         this.dual.resize(
             new THREE.Vector3(
                 this.params.size,
@@ -273,55 +269,6 @@ export default class Basic extends BaseScene {
         const simplex = new SimplexNoise()
         let i = 0
         const batch = Math.min(this.params.size ** 2, 150)
-
-        // 6 random points within size of grid
-        const points = []
-        const count = 10
-        for (let i = 0; i < count; i++) {
-            const point = new THREE.Vector3(0, 0, 0)
-            do {
-                const x = Math.floor(
-                    (simplex.noise2D(i, Math.random()) * 0.5 + 0.5) *
-                        this.params.size
-                )
-                const y = Math.floor(i * (this.params.size / count))
-                const z = Math.floor(
-                    (simplex.noise2D(i + Math.random(), Math.random()) * 0.5 +
-                        0.5) *
-                        this.params.size
-                )
-                point.set(x, y, z)
-                // while point is above previous point
-            } while (
-                points.length > 0 &&
-                point.distanceTo(points[points.length - 1]) <
-                    this.params.size / 2
-            )
-            points.push(point)
-
-            // while point is above previous point move it
-            points.push(point)
-        }
-        const bc = new Curve({
-            points,
-        })
-        const curve = bc.getWholePoints()
-        // add curve points to line
-        this.line.geometry = new THREE.BufferGeometry()
-        // curve to points
-        const pointsArray = curve
-            .map((point) => [point.x, point.y + 1, point.z])
-            .flat()
-        this.line.geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(pointsArray, 3)
-        )
-        this.line.material = new THREE.LineBasicMaterial({
-            color: 0xffffff,
-            linewidth: 2,
-        })
-
-        this.scene.add(this.line)
 
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
@@ -341,35 +288,8 @@ export default class Basic extends BaseScene {
                 y * scale * this.params.noiseScale3.y,
                 z * scale * this.params.noiseScale3.z
             )
-            const compareScale = new THREE.Vector3(0.75, 1, 0.75)
-            const isNearCurve = curve.some(
-                (point) =>
-                    point
-                        .clone()
-                        .multiply(compareScale)
-                        .distanceTo(
-                            cell.position.clone().multiply(compareScale)
-                        ) < 1
-            )
-            compareScale.set(0.5, 1, 0.5)
-            const isAboveCurve = curve.some((point) => {
-                const l = point
-                    .clone()
-                    .add(new THREE.Vector3(0, -1, 0))
-                    .multiply(compareScale)
-                    .sub(cell.position.clone().multiply(compareScale))
-                    .length()
-                return l < 2 && l > -1
-            })
 
-            if (isNearCurve) {
-                cell.value = 1
-            } else if (isAboveCurve) {
-                cell.value = 0
-            } else {
-                cell.value = noise
-                // cell.value = 0
-            }
+            cell.value = noise > 0 ? 1 : 0
         })
         this.onTick = () => {
             // loop end
@@ -457,6 +377,7 @@ export default class Basic extends BaseScene {
         }) => ({
             value: 0,
             position: new THREE.Vector3(position.x, position.y, position.z),
+            locked: false,
         })
         this.dual.main = this.dual.main.map(mapData)
         this.dual.secondary = this.dual.secondary.map(mapData)
@@ -639,6 +560,7 @@ export default class Basic extends BaseScene {
             .add(this.params, 'noiseScale', 0, 1)
             .step(0.01)
             .name('Noise Scale')
+
         const noise = generator.addFolder('3D Noise')
         noise.add(this.params.noiseScale3, 'x', 0, 1).step(0.01)
         noise.add(this.params.noiseScale3, 'y', 0, 1).step(0.01)

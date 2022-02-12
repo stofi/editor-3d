@@ -9,14 +9,14 @@ const infoColor = (_message) => {
 }
 
 module.exports = merge(commonConfiguration, {
-    watchOptions: {
-        aggregateTimeout: 200,
-        poll: 1000,
-    },
     stats: 'errors-warnings',
     mode: 'development',
     infrastructureLogging: {
         level: 'warn',
+    },
+    cache: {
+        type: 'filesystem',
+        cacheDirectory: path.resolve(__dirname, '.temp_cache'),
     },
     devServer: {
         host: 'local-ip',
@@ -25,16 +25,26 @@ module.exports = merge(commonConfiguration, {
         https: false,
         allowedHosts: 'all',
         hot: false,
-        watchFiles: ['src/**', 'static/**'],
+        watchFiles: {
+            paths: ['src/**', 'static/**'],
+            options: {
+                ignored: ['src/shaders/**'],
+                usePolling: false,
+                awaitWriteFinish: true,
+            }
+        },
+
         static: {
-            watch: true,
+            watch: false,
             directory: path.join(__dirname, '../static'),
         },
         client: {
-            logging: 'none',
+            logging: 'error',
             overlay: true,
             progress: false,
+            reconnect: 5,
         },
+        compress: false,
         onAfterSetupMiddleware: function (devServer) {
             const port = devServer.options.port
             const https = devServer.options.https ? 's' : ''

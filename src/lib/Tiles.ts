@@ -6,21 +6,6 @@ import myMaterial from '../shaders/experiment3'
 import { sha256 } from 'crypto-hash'
 import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
-const textureLoader = new THREE.TextureLoader()
-const cubeTextureLoader = new THREE.CubeTextureLoader()
-
-const environmentMapTexture = cubeTextureLoader.load([
-    '/textures/env/px.png',
-    '/textures/env/nx.png',
-    '/textures/env/py.png',
-    '/textures/env/ny.png',
-    '/textures/env/pz.png',
-    '/textures/env/nz.png',
-])
-
-myMaterial.envMap = environmentMapTexture
-myMaterial.envMapIntensity = 1
-
 const uniforms = {
     uWidth: { value: 0 },
     uHeight: { value: 0 },
@@ -136,7 +121,6 @@ export default class Tiles {
                                 'color3',
                                 new THREE.BufferAttribute(colors, 3)
                             )
-                            // mesh.geometry.computeVertexNormals()
 
                             mesh.material = this.material
                             mesh.scale.multiplyScalar(-0.25)
@@ -144,36 +128,8 @@ export default class Tiles {
                             mesh.position.set(0, 0, 0)
                             mesh.castShadow = true
                             mesh.receiveShadow = true
-                            // mesh.rotation.y += Math.PI
 
-                            // Particles
-                            // const particlesGeometry = new THREE.BufferGeometry()
-                            // particlesGeometry.setAttribute(
-                            //     'position',
-                            //     new THREE.BufferAttribute(
-                            //         mesh.geometry.attributes.position.array,
-                            //         3
-                            //     )
-                            // )
-                            // const particles = new THREE.Points(
-                            //     particlesGeometry,
-                            //     new THREE.PointsMaterial({
-                            //         size: 0.1,
-                            //         // sizeAttenuation: true,
-                            //         // depthWrite: true,
-                            //         // vertexColors: true,
-                            //     })
-                            // )
-
-                            // particles.scale.copy(mesh.scale)
-                            // particles.rotation.copy(mesh.rotation)
-                            // particles.position.set(0, 0, 0)
-
-                            const group = new THREE.Group()
-                            group.add(mesh)
-                            // group.add(particles)
-
-                            this.lib.set(child.name, group)
+                            this.lib.set(child.name, mesh)
                         },
                         Promise.resolve()
                     )

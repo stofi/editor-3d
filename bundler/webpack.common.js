@@ -1,10 +1,10 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const MiniCSSExtractPlugin = require('mini-css-extract-plugin')
 const path = require('path')
 
 module.exports = {
     entry: path.resolve(__dirname, '../src/main.ts'),
+    target: ['web', 'es2020'],
     output: {
         hashFunction: 'xxhash64',
         filename: 'bundle.[contenthash].js',
@@ -19,7 +19,6 @@ module.exports = {
             template: path.resolve(__dirname, '../src/index.html'),
             minify: true,
         }),
-        new MiniCSSExtractPlugin(),
     ],
     resolve: {
         extensions: ['.ts', '.js', '.json'],
@@ -53,12 +52,7 @@ module.exports = {
             // },
             {
                 test: /\.css$/i,
-                use: [
-                    'style-loader',
-                    'css-loader',
-                    'postcss-loader',
-                    
-                ],
+                use: ['style-loader', 'css-loader', 'postcss-loader'],
             },
 
             // Images

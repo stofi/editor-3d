@@ -75,7 +75,7 @@ export default class extends BaseScene {
 
         this.addListeners()
         this.addCamera()
-        // this.addAmbientLight()
+        this.addAmbientLight()
         this.addDirectLight()
         super.start()
         this.tick()
