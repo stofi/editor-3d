@@ -52,10 +52,6 @@ export default class Tiles {
                             if (child.type !== 'Mesh') return
                             const mesh = child as THREE.Mesh
 
-                            if (index < 1) {
-                                console.log(mesh)
-                            }
-
                             const color = new THREE.Color(0x000000)
 
                             if (

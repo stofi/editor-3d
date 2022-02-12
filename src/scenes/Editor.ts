@@ -18,6 +18,7 @@ export default class Basic extends BaseScene {
     cubes: THREE.Mesh[] = []
     duals: THREE.Mesh[] = []
     hoverCube?: THREE.Mesh
+    debugCubes: THREE.Mesh[] = []
     showHitBoxes = false
     disableEdit = true
     swapControls = false
@@ -28,7 +29,7 @@ export default class Basic extends BaseScene {
         wireframe: true,
     })
     hoverCubeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: 0xffbbbb,
         transparent: true,
         opacity: 0.2,
     })
@@ -83,13 +84,16 @@ export default class Basic extends BaseScene {
         super.tick()
         if (this.queue.length) {
             for (let i = 0; i < this.queueStep && i < this.queue.length; i++) {
-                this.addCube(this.queue[i], true)
+                this.addCube(this.queue[i])
             }
             this.queue.splice(0, this.queueStep)
             if (this.queue.length === 0) {
                 this.updateDual()
             }
         }
+        // const cubesToUpdate = this.dual.getMainQueue()
+        this.updateDual()
+        this.updateCubes()
 
         this.onTick && this.onTick()
     }
@@ -154,10 +158,13 @@ export default class Basic extends BaseScene {
         }
     }
     onClick(event: MouseEvent): void {
-        const targetNotCanvas = (event?.target as any) !== this.canvas
+        const targetNotCanvas = (event?.target as HTMLElement) !== this.canvas
         if (targetNotCanvas) return
 
-        if (this.disableEdit) return
+        if (this.disableEdit) {
+            this.printRelations()
+            return
+        }
         if (!this.swapControls) {
             this.handleAdd()
         } else {
@@ -205,12 +212,46 @@ export default class Basic extends BaseScene {
             const mainIndex = this.dual.positionToIndex(object.position)
             if (mainIndex === null) return
             if (index > -1) {
-                this.dual.main[mainIndex].value = 0
-                this.cubes.splice(index, 1)
-                this.scene.remove(object)
+                const cell = this.dual.main[mainIndex]
+                cell.value = 0
+                this.dual.replaceCell(cell)
             }
         }
-        this.updateDual()
+    }
+    printRelations() {
+        this.debugCubes.forEach((cube) => {
+            this.scene.remove(cube)
+        })
+        const intersects = this.getIntersects()
+        if (intersects.length > 0) {
+            const intersect = intersects[0] as THREE.Intersection
+            const object = intersect.object as THREE.Mesh
+            const index = this.cubes.indexOf(object)
+
+            const mainIndex = this.dual.positionToIndex(object.position)
+            if (mainIndex === null) return
+            const cell = this.dual.main[mainIndex]
+            const relations = this.dual.primaryToSecondaryMap.get(
+                `${cell.position.x},${cell.position.y},${cell.position.z}`
+            )
+            const positions = relations?.map((relation) => {
+                if (relation === null) return
+                const position = this.dual.secondary[relation].position
+                return position
+            })
+            if (positions) {
+                positions.forEach((position) => {
+                    if (position === undefined) return
+                    const c = new THREE.Mesh(
+                        this.cubeGeometry,
+                        this.hoverCubeMaterial
+                    )
+                    c.position.copy(position).subScalar(0.5)
+                    this.debugCubes.push(c)
+                    this.scene.add(c)
+                })
+            }
+        }
     }
     getIntersects(): THREE.Intersection[] {
         this.cubeRaycast.setFromCamera(this.mouse, this.camera)
@@ -238,19 +279,55 @@ export default class Basic extends BaseScene {
         return result
     }
     updateDual(): void {
-        this.duals.forEach((dualCube, index) => {
+        const dualCellsToUpdate = this.dual.getSecondaryQueue()
+        const dualPositionsToUpdate = dualCellsToUpdate.map(({ position }) =>
+            position.clone().subScalar(0.5)
+        )
+        const dualsToUpdate = this.duals.filter((dual) =>
+            dualPositionsToUpdate.some((position) =>
+                dual.position.equals(position)
+            )
+        )
+
+        dualsToUpdate.forEach((dualCube) => {
             this.scene.remove(dualCube)
+            this.duals.splice(this.duals.indexOf(dualCube), 1)
         })
-        this.duals = []
-        this.dual.calculateDual()
-        this.dual.secondary.forEach((dual, index) => {
+        dualCellsToUpdate.forEach((dual) => {
             const position = dual.position
             this.addDualCube(position, dual.value)
         })
+        this.dual.clearSecondaryQueue()
+    }
+    updateCubes(): void {
+        const cubesCellsToUpdate = this.dual.getMainQueue()
+        const cubePositionsToUpdate = cubesCellsToUpdate.map(({ position }) =>
+            position.clone()
+        )
+        const cubesToUpdate = this.cubes.filter((dual) =>
+            cubePositionsToUpdate.some((position) =>
+                dual.position.equals(position)
+            )
+        )
+
+        cubesToUpdate.forEach((cube) => {
+            this.scene.remove(cube)
+            this.cubes.splice(this.cubes.indexOf(cube), 1)
+        })
+        cubesCellsToUpdate.forEach((cubeCell) => {
+            if (cubeCell.value === 0) return
+            const position = cubeCell.position
+            const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
+            position && cube.position.copy(position)
+            cube.layers.enable(1)
+            cube.visible = this.showHitBoxes
+            this.cubes.push(cube)
+            this.scene.add(cube)
+        })
+        this.dual.clearMainQueue()
     }
     async loadTiles() {
         await this.tiles.load()
-        this.updateDual()
     }
     generate() {
         this.dual.resize(
@@ -298,7 +375,6 @@ export default class Basic extends BaseScene {
                 this.onTick = () => {
                     // noop
                 }
-                this.updateDual()
                 return
             }
             for (let j = 0; j < batch && i + j < this.dual.main.length; j++) {
@@ -307,7 +383,7 @@ export default class Basic extends BaseScene {
 
                 const noise = this.dual.main[batchIndex].value
                 if (noise > 0.5) {
-                    this.addCube(this.dual.main[batchIndex].position, true)
+                    this.addCube(this.dual.main[batchIndex].position)
 
                     this.dual.main[batchIndex].value = 1
                 } else {
@@ -369,7 +445,6 @@ export default class Basic extends BaseScene {
         const agree = confirm('Are you sure you want to clear the scene?')
         if (!agree) return
         const mapData = ({
-            value,
             position,
         }: {
             value: number
@@ -398,27 +473,21 @@ export default class Basic extends BaseScene {
     }
 
     // Objects
-    addCube(position = new THREE.Vector3(0, 0, 0), skipDual = false) {
+    addCube(position = new THREE.Vector3(0, 0, 0)) {
         !this.disableEdit && this.hoverCube && (this.hoverCube.visible = false)
         // debugger
         const mainIndex = this.dual.positionToIndex(position)
         if (mainIndex === null) return
 
-        const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
-        position && cube.position.copy(position)
-        cube.layers.enable(1)
-        cube.visible = this.showHitBoxes
-        this.cubes.push(cube)
-        this.scene.add(cube)
-        if (skipDual) return
-        this.dual.main[mainIndex].value = 1
-        this.updateDual()
+        this.dual.replaceCell({
+            position,
+            value: 1,
+            locked: false,
+        })
     }
     addDualCube(position: THREE.Vector3, value: number) {
         if (value === 0) return
-        console.trace()
         const mesh = this.tiles.lib.get(`Cube${value}`)
-        // const dualCube = new THREE.Mesh(this.cubeGeometry, this.dualMaterial)
 
         if (!mesh) return
         const dualCube = mesh.clone()
@@ -444,7 +513,12 @@ export default class Basic extends BaseScene {
             return cube.position.equals(position)
         })
         if (index > -1) {
-            this.dual.main[mainIndex].value = 0
+            // TODO
+            this.dual.replaceCell({
+                position,
+                value: 0,
+                locked: false,
+            })
             this.scene.remove(this.cubes[index])
             this.cubes.splice(index, 1)
         }
@@ -458,7 +532,17 @@ export default class Basic extends BaseScene {
         this.gui.add(this, 'load').name('Load')
         this.gui.add(this, 'clear').name('Clear')
 
-        this.gui.add(this, 'disableEdit').name('Disable editing')
+        this.gui
+            .add(this, 'disableEdit')
+            .name('Disable editing')
+            .onChange(() => {
+                if (!this.disableEdit) {
+                    this.debugCubes.forEach((cube) => {
+                        this.scene.remove(cube)
+                    })
+                }
+            })
+
         this.gui.add(this, 'swapControls').name('Swap controls')
         this.gui
             .add(this, 'showHitBoxes')
@@ -476,8 +560,8 @@ export default class Basic extends BaseScene {
             .name('Wireframe')
 
         this.gui.add(this, 'hover').listen().name('Model name')
-        if ((this.tiles.material as any).color) {
-            const mat = this.tiles.material as any
+        const mat = this.tiles.material as any
+        if (mat.color) {
             const shader = this.gui.addFolder('Shader')
             shader
                 .add(mat, 'vertexColors')
