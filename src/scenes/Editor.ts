@@ -12,15 +12,18 @@ interface EditorParams {
     noiseScale3: THREE.Vector3
 }
 
+type Tool = 'add' | 'remove' | 'inspect' | 'object'
+
 export default class Basic extends BaseScene {
     canvas: HTMLCanvasElement
     camera: THREE.Camera
     cubes: THREE.Mesh[] = []
     duals: THREE.Mesh[] = []
+    objects: THREE.Mesh[] = []
     hoverCube?: THREE.Mesh
     debugCubes: THREE.Mesh[] = []
     showHitBoxes = false
-    disableEdit = true
+    disableEdit = false
     swapControls = false
 
     cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1)
@@ -32,6 +35,9 @@ export default class Basic extends BaseScene {
         color: 0xffbbbb,
         transparent: true,
         opacity: 0.2,
+    })
+    objectMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffbbbb,
     })
 
     cubeRaycast = new THREE.Raycaster()
@@ -50,6 +56,7 @@ export default class Basic extends BaseScene {
     onTick?: () => void
 
     params: EditorParams
+    tool: Tool = 'inspect'
 
     constructor(
         params: Partial<EditorParams> = {},
@@ -161,14 +168,19 @@ export default class Basic extends BaseScene {
         const targetNotCanvas = (event?.target as HTMLElement) !== this.canvas
         if (targetNotCanvas) return
 
-        if (this.disableEdit) {
-            this.printRelations()
-            return
-        }
-        if (!this.swapControls) {
-            this.handleAdd()
-        } else {
-            this.handleRemove()
+        switch (this.tool) {
+            case 'add':
+                !this.disableEdit && this.handleAdd()
+                break
+            case 'remove':
+                !this.disableEdit && this.handleRemove()
+                break
+            case 'inspect':
+                this.printRelations()
+                break
+            case 'object':
+                !this.disableEdit && this.handleObject()
+                break
         }
     }
     onRightClick(event: MouseEvent): void {
@@ -202,6 +214,21 @@ export default class Basic extends BaseScene {
             this.addCube(position)
         }
     }
+    handleObject() {
+        console.log('handle object')
+
+        const intersects = this.getIntersects()
+        if (intersects.length > 0) {
+            const intersect = intersects[0] as THREE.Intersection
+            const object = intersect.object as THREE.Mesh
+            // index of intersected object
+            const position = object.position.clone()
+            const normal = intersect?.face?.normal.clone() ?? null
+            if (!normal) return
+            position.add(normal)
+            this.addObject(position)
+        }
+    }
     handleRemove() {
         const intersects = this.getIntersects()
         if (intersects.length > 0) {
@@ -213,8 +240,11 @@ export default class Basic extends BaseScene {
             if (mainIndex === null) return
             if (index > -1) {
                 const cell = this.dual.main[mainIndex]
-                cell.value = 0
-                this.dual.replaceCell(cell)
+                this.dual.replaceCell({
+                    position: cell.position,
+                    value: 0,
+                    locked: false,
+                })
             }
         }
     }
@@ -261,15 +291,19 @@ export default class Basic extends BaseScene {
         this.dualRaycast.setFromCamera(this.mouse, this.camera)
         const result = this.dualRaycast.intersectObjects(this.duals)
         const cubes = this.getIntersects()
+
         if (
             this.hoverCube &&
             cubes.length > 0 &&
             cubes[0].object.position &&
             cubes[0].face
         ) {
-            const pos = cubes[0].object.position
-                .clone()
-                .add(cubes[0].face.normal)
+            const pos = cubes[0].object.position.clone()
+
+            if (this.tool !== 'remove' && this.tool !== 'inspect') {
+                pos.add(cubes[0].face.normal)
+            }
+
             this.hoverCube.position.copy(pos)
             !this.disableEdit && (this.hoverCube.visible = true)
         } else if (this.hoverCube) {
@@ -309,13 +343,31 @@ export default class Basic extends BaseScene {
                 dual.position.equals(position)
             )
         )
+        const objectsToUpdate = this.objects.filter((dual) =>
+            cubePositionsToUpdate.some((position) =>
+                dual.position.equals(position)
+            )
+        )
 
         cubesToUpdate.forEach((cube) => {
             this.scene.remove(cube)
             this.cubes.splice(this.cubes.indexOf(cube), 1)
         })
+        objectsToUpdate.forEach((object) => {
+            this.scene.remove(object)
+            this.objects.splice(this.objects.indexOf(object), 1)
+        })
         cubesCellsToUpdate.forEach((cubeCell) => {
-            if (cubeCell.value === 0) return
+            if (cubeCell.value === 0 && !cubeCell.metadata) return
+            if (cubeCell.metadata && cubeCell.metadata.type === 'object') {
+                const obj = new THREE.Mesh(
+                    this.cubeGeometry,
+                    this.objectMaterial
+                )
+                obj.position.copy(cubeCell.position.clone())
+                this.objects.push(obj)
+                this.scene.add(obj)
+            }
             const position = cubeCell.position
             const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
             position && cube.position.copy(position)
@@ -502,6 +554,7 @@ export default class Basic extends BaseScene {
             this.cubeGeometry,
             this.hoverCubeMaterial
         )
+        this.hoverCube.scale.set(1.1, 1.1, 1.1)
         this.hoverCube.visible = false
         this.scene.add(this.hoverCube)
     }
@@ -655,5 +708,26 @@ export default class Basic extends BaseScene {
         noise.add(this.params.noiseScale3, 'y', 0, 1).step(0.01)
         noise.add(this.params.noiseScale3, 'z', 0, 1).step(0.01)
         generator.add(this, 'generate').name('Generate')
+    }
+    setTool(tool: Tool) {
+        this.debugCubes.forEach((cube) => {
+            this.scene.remove(cube)
+        })
+        this.tool = tool
+    }
+    addObject(position: THREE.Vector3) {
+        !this.disableEdit && this.hoverCube && (this.hoverCube.visible = false)
+        // debugger
+        const mainIndex = this.dual.positionToIndex(position)
+        if (mainIndex === null) return
+
+        this.dual.replaceCell({
+            position,
+            value: 0,
+            locked: false,
+            metadata: {
+                type: 'object',
+            },
+        })
     }
 }
