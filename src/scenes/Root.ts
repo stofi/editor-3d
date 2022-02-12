@@ -23,6 +23,7 @@ export default class extends BaseScene {
     directLight?: THREE.DirectionalLight
     stats: Stats
     pixRatio = 0.4
+    frameId = 0
 
     constructor(canvas: HTMLCanvasElement) {
         super()
@@ -56,6 +57,9 @@ export default class extends BaseScene {
     }
     // Super overrides:
     tick() {
+        if (this.frameId) {
+            window.cancelAnimationFrame(this.frameId)
+        }
         if (!this.clock) {
             throw new Error('Root is not initialized')
         }
@@ -68,7 +72,7 @@ export default class extends BaseScene {
         this.stats.update()
         super.tick()
 
-        window.requestAnimationFrame(this.tick.bind(this))
+        this.frameId = window.requestAnimationFrame(this.tick.bind(this))
     }
     start() {
         this.clock = new THREE.Clock()

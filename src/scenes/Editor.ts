@@ -267,7 +267,6 @@ export default class Basic extends BaseScene {
         )
 
         const simplex = new SimplexNoise()
-        let i = 0
         const batch = Math.min(this.params.size ** 2, 150)
 
         this.cubes.forEach((cube) => {
@@ -291,14 +290,19 @@ export default class Basic extends BaseScene {
 
             cell.value = noise > 0 ? 1 : 0
         })
+        let i = 0
+        let batchIndex = 0
         this.onTick = () => {
             // loop end
             if (i >= this.dual.main.length) {
+                this.onTick = () => {
+                    // noop
+                }
                 this.updateDual()
                 return
             }
             for (let j = 0; j < batch && i + j < this.dual.main.length; j++) {
-                const batchIndex = i + j
+                batchIndex = i + j
                 if (!this.dual.main[batchIndex]) continue
 
                 const noise = this.dual.main[batchIndex].value
@@ -412,6 +416,7 @@ export default class Basic extends BaseScene {
     }
     addDualCube(position: THREE.Vector3, value: number) {
         if (value === 0) return
+        console.trace()
         const mesh = this.tiles.lib.get(`Cube${value}`)
         // const dualCube = new THREE.Mesh(this.cubeGeometry, this.dualMaterial)
 
