@@ -409,8 +409,16 @@ export default class Basic extends BaseScene {
                 y * scale * this.params.noiseScale3.y,
                 z * scale * this.params.noiseScale3.z
             )
-
-            cell.value = noise > 0 ? 1 : 0
+            // distance to center
+            const distance = Math.sqrt(
+                Math.pow(x - this.params.size.x / 2, 2) +
+                    Math.pow(z - this.params.size.z / 2, 2)
+            )
+            if (distance > this.params.size.x / 2) {
+                cell.value = 0
+            } else {
+                cell.value = noise > 0 ? 1 : 0
+            }
         })
         let i = 0
         let batchIndex = 0

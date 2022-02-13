@@ -19,6 +19,11 @@ const buttons = {
     object: document.getElementById('object') as HTMLButtonElement,
 }
 
+const version = document.getElementById('version') as HTMLDivElement
+version.innerText = `v${process.env.VERSION} (${process.env.COMMIT_ID} ${
+    new Date(process.env.DATE as string).toLocaleDateString('cs') ?? ''
+})`
+
 const setActiveClass = (activeKey: string) => {
     Object.entries(buttons).forEach(([key, button]) => {
         button.classList.remove('opacity-40')

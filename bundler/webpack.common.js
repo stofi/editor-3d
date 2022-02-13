@@ -1,6 +1,19 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
+const webpack = require('webpack')
+
+// get commit id
+const commitId = require('child_process')
+    .execSync('git rev-parse --short HEAD')
+    .toString()
+    .trim()
+// get version number from package.json
+const version = require('../package.json').version
+
+// get the current date
+const date = new Date()
+
 
 module.exports = {
     entry: path.resolve(__dirname, '../src/main.ts'),
@@ -18,6 +31,11 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, '../src/index.html'),
             minify: true,
+        }),
+        new webpack.DefinePlugin({
+            'process.env.VERSION': JSON.stringify(version),
+            'process.env.COMMIT_ID': JSON.stringify(commitId),
+            'process.env.DATE': JSON.stringify(date.toISOString()),
         }),
     ],
     resolve: {
