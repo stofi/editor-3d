@@ -27,7 +27,7 @@ window.addEventListener('resize', () => {
 })
 setUniforms(uniforms, window.innerWidth, window.innerHeight)
 
-const generateHash = async (...args: any): Promise<string> => {
+const generateHash = async (args: string): Promise<string> => {
     const cryptoExists = !!globalThis.crypto.subtle
     return cryptoExists ? await sha256(args) : args.toString()
 }
