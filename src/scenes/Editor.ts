@@ -143,25 +143,29 @@ export default class Basic extends BaseScene {
         this.lastTouch = event.timeStamp
     }
     onTouchEnd(event: TouchEvent): void {
-        if (this.disableEdit) return
+        const targetNotCanvas = (event?.target as HTMLElement) !== this.canvas
+
         const longpress = event.timeStamp - this.lastTouch > 500
 
         const touch = ((event.changedTouches || [])[0] || {}) as Touch
 
         this.mouse.x = (touch.clientX / this.canvas.clientWidth) * 2 - 1
         this.mouse.y = -(touch.clientY / this.canvas.clientHeight) * 2 + 1
-        if (!this.swapControls) {
-            if (longpress) {
-                this.handleRemove()
-            } else {
-                this.handleAdd()
-            }
-        } else {
-            if (longpress) {
-                this.handleAdd()
-            } else {
-                this.handleRemove()
-            }
+        if (targetNotCanvas) return
+
+        switch (this.tool) {
+            case 'add':
+                !this.disableEdit && this.handleAdd()
+                break
+            case 'remove':
+                !this.disableEdit && this.handleRemove()
+                break
+            case 'inspect':
+                this.printRelations()
+                break
+            case 'object':
+                !this.disableEdit && this.handleObject()
+                break
         }
     }
     onClick(event: MouseEvent): void {
@@ -401,10 +405,14 @@ export default class Basic extends BaseScene {
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
         })
+        this.objects.forEach((object) => {
+            this.scene.remove(object)
+        })
         this.duals.forEach((dualCube) => {
             this.scene.remove(dualCube)
         })
         this.cubes = []
+        this.objects = []
         this.duals = []
         this.dual.main.forEach((cell) => {
             const x = cell.position.x
@@ -465,19 +473,24 @@ export default class Basic extends BaseScene {
                 const collection = main ? this.dual.main : this.dual.secondary
                 const cell = collection[index]
                 cell.value = value
-                return cell
+                this.dual.replaceCell(cell)
+                // return cell
             }
-        this.dual.main = main.map(mapData(true))
-        this.dual.secondary = secondary.map(mapData(false))
-        this.camera.position.fromArray(camera)
+        main.forEach(mapData(true))
+        // this.dual.secondary = secondary.map(mapData(false))
+        // this.camera.position.fromArray(camera)
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
+        })
+        this.objects.forEach((object) => {
+            this.scene.remove(object)
         })
         this.duals.forEach((dualCube) => {
             this.scene.remove(dualCube)
         })
         this.cubes = []
         this.duals = []
+        this.objects = []
         this.dual.main.forEach((cell) => {
             if (cell.value > 0.5) {
                 this.queue.push(cell.position)

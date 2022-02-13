@@ -27,6 +27,10 @@ window.addEventListener('resize', () => {
 })
 setUniforms(uniforms, window.innerWidth, window.innerHeight)
 
+const generateHash = async (...args: any): Promise<string> => {
+    const cryptoExists = !!globalThis.crypto.subtle
+    return cryptoExists ? await sha256(args) : args.toString()
+}
 export default class Tiles {
     // draco = new DRACOLoader()
     loader = new GLTFLoader()
@@ -75,11 +79,12 @@ export default class Tiles {
 
                             const positionArray =
                                 mesh.geometry.attributes.position.array
-                            const hash = await sha256(
+                            const hash = await generateHash(
                                 Array.from(positionArray)
                                     .map((x) => x.toString())
                                     .join(',')
                             )
+
                             if (!this.hashes.has(hash)) {
                                 this.hashes.set(hash, mesh.geometry)
                             } else {
