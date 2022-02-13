@@ -310,6 +310,7 @@ export default class Basic extends BaseScene {
         )
 
         dualsToUpdate.forEach((dualCube) => {
+            dualCube.geometry.dispose()
             this.scene.remove(dualCube)
             this.duals.splice(this.duals.indexOf(dualCube), 1)
         })
@@ -338,10 +339,12 @@ export default class Basic extends BaseScene {
         )
 
         cubesToUpdate.forEach((cube) => {
+            cube.geometry.dispose()
             this.scene.remove(cube)
             this.cubes.splice(this.cubes.indexOf(cube), 1)
         })
         objectsToUpdate.forEach((object) => {
+            object.geometry.dispose()
             this.scene.remove(object)
             this.objects.splice(this.objects.indexOf(object), 1)
         })
@@ -382,12 +385,15 @@ export default class Basic extends BaseScene {
         const batch = Math.min(this.params.size.x, 150)
 
         this.cubes.forEach((cube) => {
+            cube.geometry.dispose()
             this.scene.remove(cube)
         })
         this.objects.forEach((object) => {
+            object.geometry.dispose()
             this.scene.remove(object)
         })
         this.duals.forEach((dualCube) => {
+            dualCube.geometry.dispose()
             this.scene.remove(dualCube)
         })
         this.cubes = []

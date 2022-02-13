@@ -40,8 +40,10 @@ export default class extends BaseScene {
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
         })
-        this.renderer.shadowMap.enabled = true
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+        console.log(this.renderer.getContext())
+
+        // this.renderer.shadowMap.enabled = true
+        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
         this.scene.background = new THREE.Color('#1b1d1e')
         this.onResize()
         this.addListeners()
