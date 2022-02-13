@@ -57,9 +57,9 @@ export default class extends BaseScene {
     }
     // Super overrides:
     tick() {
-        if (this.frameId) {
-            window.cancelAnimationFrame(this.frameId)
-        }
+        // if (this.frameId) {
+        //     window.cancelAnimationFrame(this.frameId)
+        // }
         if (!this.clock) {
             throw new Error('Root is not initialized')
         }

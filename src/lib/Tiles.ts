@@ -4,7 +4,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import myMaterial from '../shaders/experiment3'
 import { sha256 } from 'crypto-hash'
-import { StandardNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js'
 
 const uniforms = {
     uWidth: { value: 0 },

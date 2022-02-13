@@ -32,10 +32,10 @@ const root = new Root(canvas)
 root.start()
 
 const main = async () => {
-    const size = sceneData ? JSON.parse(sceneData).size ?? 10 : 10
+    // const size = sceneData ? JSON.parse(sceneData).size ?? 10 : 10
 
     const editor = new Editor(
-        { size, noiseScale: 0.5, noiseScale3: new Vector3(0.2, 0.8, 0.2) },
+        { noiseScale: 0.5, noiseScale3: new Vector3(0.2, 0.8, 0.2) },
         canvas,
         root.camera!
     )

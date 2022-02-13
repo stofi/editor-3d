@@ -7,7 +7,7 @@ import Dual from '../lib/Dual'
 import Tiles from '../lib/Tiles'
 
 interface EditorParams {
-    size: number
+    size: THREE.Vector3
     noiseScale: number
     noiseScale3: THREE.Vector3
 }
@@ -50,9 +50,6 @@ export default class Basic extends BaseScene {
     dual: Dual
     tiles = new Tiles()
 
-    queue: THREE.Vector3[] = []
-    queueStep = 1000
-
     onTick?: () => void
 
     params: EditorParams
@@ -65,39 +62,25 @@ export default class Basic extends BaseScene {
     ) {
         super()
         this.params = {
-            size: 10,
+            size: new THREE.Vector3(10, 10, 10),
             noiseScale: 0.01,
             noiseScale3: new THREE.Vector3(0.01, 0.01, 0.01),
             ...params,
         }
         this.camera = camera
         this.canvas = canvas
-        this.dual = new Dual(
-            new THREE.Vector3(
-                this.params.size,
-                this.params.size,
-                this.params.size
-            )
-        )
+        this.dual = new Dual(this.params.size.clone())
         this.scene.scale.y = 1
         this.scene.position.set(
-            -this.params.size / 2,
-            -this.params.size / 2,
-            -this.params.size / 2
+            -this.params.size.x / 2,
+            -this.params.size.y / 2,
+            -this.params.size.z / 2
         )
     }
     // Super overrides:
     tick(): void {
         super.tick()
-        if (this.queue.length) {
-            for (let i = 0; i < this.queueStep && i < this.queue.length; i++) {
-                this.addCube(this.queue[i])
-            }
-            this.queue.splice(0, this.queueStep)
-            if (this.queue.length === 0) {
-                this.updateDual()
-            }
-        }
+
         // const cubesToUpdate = this.dual.getMainQueue()
         this.updateDual()
         this.updateCubes()
@@ -219,8 +202,6 @@ export default class Basic extends BaseScene {
         }
     }
     handleObject() {
-        console.log('handle object')
-
         const intersects = this.getIntersects()
         if (intersects.length > 0) {
             const intersect = intersects[0] as THREE.Intersection
@@ -318,6 +299,7 @@ export default class Basic extends BaseScene {
     }
     updateDual(): void {
         const dualCellsToUpdate = this.dual.getSecondaryQueue()
+        if (dualCellsToUpdate.length === 0) return
         const dualPositionsToUpdate = dualCellsToUpdate.map(({ position }) =>
             position.clone().subScalar(0.5)
         )
@@ -339,6 +321,8 @@ export default class Basic extends BaseScene {
     }
     updateCubes(): void {
         const cubesCellsToUpdate = this.dual.getMainQueue()
+
+        if (cubesCellsToUpdate.length === 0) return
         const cubePositionsToUpdate = cubesCellsToUpdate.map(({ position }) =>
             position.clone()
         )
@@ -372,6 +356,7 @@ export default class Basic extends BaseScene {
                 this.objects.push(obj)
                 this.scene.add(obj)
             }
+
             const position = cubeCell.position
             const cube = new THREE.Mesh(this.cubeGeometry, this.cubeMaterial)
             position && cube.position.copy(position)
@@ -386,21 +371,15 @@ export default class Basic extends BaseScene {
         await this.tiles.load()
     }
     generate() {
-        this.dual.resize(
-            new THREE.Vector3(
-                this.params.size,
-                this.params.size,
-                this.params.size
-            )
-        )
+        this.dual.resize(this.params.size.clone())
         this.scene.position.set(
-            -this.params.size / 2,
-            -this.params.size / 2,
-            -this.params.size / 2
+            -this.params.size.x / 2,
+            -this.params.size.y / 2,
+            -this.params.size.z / 2
         )
 
         const simplex = new SimplexNoise()
-        const batch = Math.min(this.params.size ** 2, 150)
+        const batch = Math.min(this.params.size.x, 150)
 
         this.cubes.forEach((cube) => {
             this.scene.remove(cube)
@@ -432,9 +411,7 @@ export default class Basic extends BaseScene {
         this.onTick = () => {
             // loop end
             if (i >= this.dual.main.length) {
-                this.onTick = () => {
-                    // noop
-                }
+                this.onTick = undefined
                 return
             }
             for (let j = 0; j < batch && i + j < this.dual.main.length; j++) {
@@ -444,8 +421,6 @@ export default class Basic extends BaseScene {
                 const noise = this.dual.main[batchIndex].value
                 if (noise > 0.5) {
                     this.addCube(this.dual.main[batchIndex].position)
-
-                    this.dual.main[batchIndex].value = 1
                 } else {
                     this.removeCube(this.dual.main[batchIndex].position)
                 }
@@ -459,14 +434,19 @@ export default class Basic extends BaseScene {
         const main = this.dual.main.map(mapData)
         const secondary = this.dual.secondary.map(mapData)
         const camera = this.camera.position.toArray()
-        const size = this.dual.mainSize.x
+        const size = this.dual.mainSize.toArray()
         return JSON.stringify({ main, secondary, camera, size })
     }
     import(data: string): void {
         // if (this.initialized) return
         const { main, secondary, camera, size } = JSON.parse(data)
-        this.dual.resize(new THREE.Vector3(size, size, size))
-        this.scene.position.set(-size / 2, -size / 2, -size / 2)
+        this.params.size.fromArray(size)
+        this.dual.resize(this.params.size)
+        this.scene.position.set(
+            -this.params.size.x / 2,
+            -this.params.size.y / 2,
+            -this.params.size.z / 2
+        )
         const mapData =
             (main = true) =>
             (value: number, index: number) => {
@@ -491,11 +471,6 @@ export default class Basic extends BaseScene {
         this.cubes = []
         this.duals = []
         this.objects = []
-        this.dual.main.forEach((cell) => {
-            if (cell.value > 0.5) {
-                this.queue.push(cell.position)
-            }
-        })
     }
     save() {
         localStorage.setItem('scene', this.export())
@@ -579,14 +554,13 @@ export default class Basic extends BaseScene {
             return cube.position.equals(position)
         })
         if (index > -1) {
-            // TODO
             this.dual.replaceCell({
                 position,
                 value: 0,
                 locked: false,
             })
-            this.scene.remove(this.cubes[index])
-            this.cubes.splice(index, 1)
+            // this.scene.remove(this.cubes[index])
+            // this.cubes.splice(index, 1)
         }
     }
     addGui(): void {
@@ -710,7 +684,10 @@ export default class Basic extends BaseScene {
         const generator = this.gui.addFolder('Generator')
         generator.close()
 
-        generator.add(this.params, 'size', 1, 20).step(1).name('Size')
+        const size = generator.addFolder('Size')
+        size.add(this.params.size, 'x', 1, 20).step(1).name('Width')
+        size.add(this.params.size, 'y', 1, 8).step(1).name('Height')
+        size.add(this.params.size, 'z', 1, 20).step(1).name('Depth')
         generator
             .add(this.params, 'noiseScale', 0, 1)
             .step(0.01)
