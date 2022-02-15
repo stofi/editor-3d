@@ -3,12 +3,16 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import * as dat from 'lil-gui'
 
+import dummyFragment from '../shaders/dummyFragment'
+import dummyVertex from '../shaders/dummyVertex'
+
 import BaseScene from '../lib/BaseScene'
 
 export default class extends BaseScene {
     gui: dat.GUI
     canvas: HTMLCanvasElement
     scene: THREE.Scene
+    dummyScene: THREE.Scene
     sizes: {
         width: number
         height: number
@@ -24,6 +28,8 @@ export default class extends BaseScene {
     stats: Stats
     pixRatio = 0.4
     frameId = 0
+    dummyCamera: THREE.OrthographicCamera
+    rtTexture: THREE.WebGLRenderTarget
 
     constructor(canvas: HTMLCanvasElement) {
         super()
@@ -40,11 +46,22 @@ export default class extends BaseScene {
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
         })
-        console.log(this.renderer.getContext())
+        this.renderer.autoClear = false
+
+        const loader = new THREE.CubeTextureLoader()
+        const texture = loader.load([
+            'textures/env/px.png',
+            'textures/env/nx.png',
+            'textures/env/py.png',
+            'textures/env/ny.png',
+            'textures/env/pz.png',
+            'textures/env/nz.png',
+        ])
+        this.scene.background = texture
 
         // this.renderer.shadowMap.enabled = true
         // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-        this.scene.background = new THREE.Color('#1b1d1e')
+        // this.scene.background = new THREE.Color('#1b1d1e')
         this.onResize()
         this.addListeners()
         this.stats = Stats()
@@ -53,9 +70,54 @@ export default class extends BaseScene {
             .add(this, 'pixRatio', 0.0001, 2)
             .step(0.1)
             .onFinishChange(() => {
-                this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
+                if (this.rtTexture) {
+                    this.rtTexture.setSize(
+                        window.innerWidth * this.pixRatio, //resolution x
+                        window.innerHeight * this.pixRatio //resolution y
+                    )
+                }
             })
             .name('Resolution')
+
+        this.dummyCamera = new THREE.OrthographicCamera(
+            window.innerWidth / -2,
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            window.innerHeight / -2,
+            -10000,
+            10000
+        )
+        this.dummyCamera.position.z = 1
+
+        this.dummyScene = new THREE.Scene()
+
+        this.rtTexture = new THREE.WebGLRenderTarget(
+            window.innerWidth * this.pixRatio, //resolution x
+            window.innerHeight * this.pixRatio, //resolution y
+            {
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.NearestFilter,
+                format: THREE.RGBAFormat,
+            }
+        )
+
+        const materialScreen = new THREE.ShaderMaterial({
+            uniforms: { tDiffuse: { value: this.rtTexture.texture } },
+            vertexShader: dummyVertex,
+            fragmentShader: dummyFragment,
+            depthWrite: false,
+        })
+
+        const plane = new THREE.PlaneGeometry(
+            window.innerWidth,
+            window.innerHeight
+        )
+        // plane to display rendered texture
+        const quad = new THREE.Mesh(plane, materialScreen)
+        quad.position.z = -100
+        this.dummyScene.add(quad)
+
+        this.scene.fog = new THREE.Fog(0x000000, 1, 100)
     }
     // Super overrides:
     tick() {
@@ -70,8 +132,21 @@ export default class extends BaseScene {
         }
 
         this.elapsedTime = this.clock.getElapsedTime()
+
+        // Render first scene into texture
+        this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
+        this.renderer.setRenderTarget(this.rtTexture)
+        this.renderer.clear()
         this.renderer.render(this.scene, this.camera)
+        // Render full screen quad with generated texture
+        this.renderer.setRenderTarget(null)
+
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        this.renderer.clear()
+        this.renderer.render(this.dummyScene, this.dummyCamera)
+
         this.stats.update()
+
         super.tick()
 
         this.frameId = window.requestAnimationFrame(this.tick.bind(this))
@@ -106,6 +181,12 @@ export default class extends BaseScene {
             width: window.innerWidth,
             height: window.innerHeight,
         }
+        if (this.rtTexture) {
+            this.rtTexture.setSize(
+                window.innerWidth * this.pixRatio, //resolution x
+                window.innerHeight * this.pixRatio //resolution y
+            )
+        }
 
         if (this.camera) {
             this.camera.aspect = this.sizes.width / this.sizes.height
@@ -114,12 +195,12 @@ export default class extends BaseScene {
 
         // Update renderer
         this.renderer.setSize(this.sizes.width, this.sizes.height)
-        this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
+        // this.renderer.setPixelRatio(Math.min(this.pixRatio, 2))
     }
 
     // Objects
     addAmbientLight() {
-        this.ambientLight = new THREE.AmbientLight(0x404040)
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 1)
         this.scene.add(this.ambientLight)
     }
     addDirectLight() {
